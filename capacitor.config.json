@@ -1,0 +1,5 @@
+{
+  "appId": "com.zoneclock.app",
+  "appName": "ZoneClock",
+  "webDir": "dist"
+}
