@@ -5,19 +5,15 @@
  * All other files import from here instead of "firebase/auth" directly.
  */
 
+import * as mock from "./firebase.mock.js";
+import * as realAuth from "firebase/auth";
+import * as realFirestore from "firebase/firestore";
+
 const USE_MOCK =
   !import.meta.env.VITE_FIREBASE_API_KEY ||
   import.meta.env.VITE_FIREBASE_API_KEY === "YOUR_API_KEY";
 
-let compat;
-
-if (USE_MOCK) {
-  compat = await import("./firebase.mock.js");
-} else {
-  const authModule = await import("firebase/auth");
-  const firestoreModule = await import("firebase/firestore");
-  compat = { ...authModule, ...firestoreModule };
-}
+const compat = USE_MOCK ? mock : { ...realAuth, ...realFirestore };
 
 export const {
   // Auth
