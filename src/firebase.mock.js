@@ -3,8 +3,52 @@
  * Simulates auth + Firestore in-memory so you can test the full UI locally.
  */
 
-// ─── In-memory store ─────────────────────────────────────────────────────────
-let _user = null;
+// ─── LocalStorage Persistence ────────────────────────────────────────────────
+const STORAGE_PREFIX = "zoneclock_mock_";
+
+function _loadStorage(key, fallback) {
+  try {
+    const raw = typeof localStorage !== "undefined" ? localStorage.getItem(STORAGE_PREFIX + key) : null;
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function _saveStorage(key, data) {
+  try {
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(data));
+    }
+  } catch (err) {
+    console.warn("Storage save error for " + key, err);
+  }
+}
+
+export function _reviveTs(val) {
+  if (!val) return val;
+  if (Array.isArray(val)) return val.map(_reviveTs);
+  if (typeof val !== "object") return val;
+  const out = { ...val };
+  for (const [k, v] of Object.entries(out)) {
+    if (v && typeof v === "object") {
+      if (typeof v._ms === "number" || typeof v.seconds === "number") {
+        const ms = v._ms || v.seconds * 1000;
+        out[k] = {
+          _ms: ms,
+          seconds: ms / 1000,
+          toMillis: () => ms,
+          toDate: () => new Date(ms),
+        };
+      } else {
+        out[k] = _reviveTs(v);
+      }
+    }
+  }
+  return out;
+}
+
+let _user = _loadStorage("user", null);
 let _authListeners = [];
 
 function _makeId() {
@@ -12,14 +56,26 @@ function _makeId() {
 }
 
 function _now() {
-  return { toDate: () => new Date(), toMillis: () => Date.now(), seconds: Date.now() / 1000 };
+  const ms = Date.now();
+  return {
+    _ms: ms,
+    seconds: ms / 1000,
+    toDate: () => new Date(ms),
+    toMillis: () => ms,
+  };
 }
 
 function _tsDaysAgo(days, hours = 9) {
   const d = new Date();
   d.setDate(d.getDate() - days);
   d.setHours(hours, 0, 0, 0);
-  return { toDate: () => d, toMillis: () => d.getTime(), seconds: d.getTime() / 1000 };
+  const ms = d.getTime();
+  return {
+    _ms: ms,
+    seconds: ms / 1000,
+    toDate: () => d,
+    toMillis: () => ms,
+  };
 }
 
 const _docs = {
@@ -221,7 +277,7 @@ const _tasks = [
 ];
 
 // Pre-seeded sessions for rich analytics, payroll, and live map
-const _sessions = [
+const _initialSessions = [
   {
     id: "sess-1",
     uid: "mazen-admin",
@@ -298,13 +354,22 @@ const _sessions = [
   }
 ];
 
+const _storedSessions = _loadStorage("sessions", null);
+const _sessions = _storedSessions ? _reviveTs(_storedSessions) : [..._initialSessions];
+
+function _saveSessions() {
+  _saveStorage("sessions", _sessions);
+}
+
 function _notify() {
+  _saveStorage("user", _user);
+  if (auth) auth.currentUser = _user;
   _authListeners.forEach((cb) => cb(_user));
 }
 
 // ─── Mock Auth ───────────────────────────────────────────────────────────────
 export const auth = {
-  currentUser: null,
+  currentUser: _user,
 };
 
 export const googleProvider = {};
@@ -440,6 +505,7 @@ export async function updateDoc(ref, patch) {
   if (ref._col === "sessions") {
     const idx = _sessions.findIndex((s) => s.id === ref._id);
     if (idx >= 0) _sessions[idx] = { ..._sessions[idx], ...updated };
+    _saveSessions();
   } else if (ref._col === "teams") {
     const idx = _teams.findIndex((t) => t.id === ref._id);
     if (idx >= 0) _teams[idx] = { ..._teams[idx], ...updated };
@@ -465,7 +531,8 @@ export async function addDoc(colRef, data) {
 
   if (colRef._col === "sessions") {
     docData.checkInTime = docData.checkInTime || created;
-    _sessions.push(docData);
+    _sessions.unshift(docData);
+    _saveSessions();
   } else if (colRef._col === "teams") {
     _teams.push(docData);
   } else if (colRef._col === "shifts") {

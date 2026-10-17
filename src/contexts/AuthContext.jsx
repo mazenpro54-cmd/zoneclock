@@ -10,6 +10,7 @@ import {
   doc,
   setDoc,
   getDoc,
+  updateDoc,
   serverTimestamp,
 } from "../firebaseCompat";
 

@@ -15,6 +15,7 @@ const DEFAULTS = {
   overtimeHours: 8,
   reminderHour: 9,
   zoneEnforcement: false,
+  autoCheckoutOnExit: true,
   zoneLat: 30.0444,
   zoneLng: 31.2357,
   zoneRadiusM: 200,

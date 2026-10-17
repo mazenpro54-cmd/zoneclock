@@ -15,14 +15,42 @@ import { db } from "../firebase";
 
 const SESSIONS = "sessions";
 
-export async function checkIn({ uid, displayName, project, note, location }) {
+export function reviveSession(session) {
+  if (!session) return null;
+  const s = { ...session };
+  if (s.checkInTime) {
+    const ms =
+      typeof s.checkInTime?.toMillis === "function"
+        ? s.checkInTime.toMillis()
+        : s.checkInTime?._ms ||
+          (s.checkInTime?.seconds ? s.checkInTime.seconds * 1000 : null) ||
+          (typeof s.checkInTime === "number" ? s.checkInTime : Date.now());
+    s.checkInTime = {
+      _ms: ms,
+      seconds: ms / 1000,
+      toMillis: () => ms,
+      toDate: () => new Date(ms),
+    };
+  }
+  return s;
+}
+
+export async function checkIn({ uid, displayName, project, note, location, taskId }) {
+  const nowMs = Date.now();
+  const ts = {
+    _ms: nowMs,
+    seconds: nowMs / 1000,
+    toMillis: () => nowMs,
+    toDate: () => new Date(nowMs),
+  };
   return addDoc(collection(db, SESSIONS), {
     uid,
     displayName,
     project: project || "General",
     note: note || "",
     location: location || null,
-    checkInTime: serverTimestamp(),
+    taskId: taskId || null,
+    checkInTime: ts,
     checkOutTime: null,
     breaks: [],
     status: "active",
@@ -31,12 +59,20 @@ export async function checkIn({ uid, displayName, project, note, location }) {
   });
 }
 
-export async function checkOut(sessionId, checkInTimeMs) {
+export async function checkOut(sessionId, checkInTimeMs, exitReason = "manual") {
   const now = Date.now();
+  const durationMs = Math.max(0, now - (checkInTimeMs || now));
+  const ts = {
+    _ms: now,
+    seconds: now / 1000,
+    toMillis: () => now,
+    toDate: () => new Date(now),
+  };
   await updateDoc(doc(db, SESSIONS, sessionId), {
-    checkOutTime: serverTimestamp(),
-    durationMs: now - checkInTimeMs,
+    checkOutTime: ts,
+    durationMs,
     status: "done",
+    exitReason,
   });
 }
 

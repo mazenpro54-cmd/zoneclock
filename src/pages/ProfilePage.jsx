@@ -243,6 +243,18 @@ export default function ProfilePage() {
 
               {settings.zoneEnforcement && (
                 <div className="zone-controls" style={{ paddingTop: "0.75rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", background: "rgba(16, 185, 129, 0.08)", border: "1px solid rgba(16, 185, 129, 0.2)", borderRadius: "8px", marginBottom: "12px" }}>
+                    <div>
+                      <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "var(--text)" }}>Auto Check-Out on Zone Exit</span>
+                      <p className="muted-small" style={{ margin: "2px 0 0" }}>Keep session active when app is closed. Only check out if you exit the work zone or tap Check Out.</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      className="toggle-switch"
+                      checked={settings.autoCheckoutOnExit !== false}
+                      onChange={(e) => updateSettings({ autoCheckoutOnExit: e.target.checked })}
+                    />
+                  </div>
                   <GoogleMapsZonePicker />
                 </div>
               )}

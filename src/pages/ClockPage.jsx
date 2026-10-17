@@ -9,10 +9,11 @@ import {
   scheduleOvertimeAlert,
   scheduleDailyCheckInReminder,
 } from "../services/notifications";
+import { verifyCurrentPositionZone } from "../services/geofence";
 import {
   LogIn, LogOut, Coffee, Clock, MapPin, Tag, FileText,
   Bell, BellOff, AlertTriangle, CheckCircle2, Target,
-  Play, Pause, RotateCcw, AlertCircle
+  Play, Pause, RotateCcw, AlertCircle, ShieldCheck
 } from "lucide-react";
 
 const PROJECTS = [
@@ -36,8 +37,18 @@ function ElapsedDisplay({ ms, isOvertime }) {
 export default function ClockPage() {
   const { profile } = useAuth();
   const { settings } = useSettings();
-  const { session, loading, elapsed, checkIn, checkOut, startBreak, endBreak } =
-    useActiveSession();
+  const {
+    session,
+    loading,
+    elapsed,
+    checkIn,
+    checkOut,
+    startBreak,
+    endBreak,
+    autoCheckoutNotice,
+    clearAutoCheckoutNotice,
+    zoneStatus,
+  } = useActiveSession();
 
   const [project, setProject] = useState("General");
   const [note, setNote] = useState("");
@@ -101,27 +112,20 @@ export default function ClockPage() {
 
   // ── Zone enforcement ──────────────────────────────────────────────
   async function verifyZone() {
-    if (!settings.zoneEnforcement || !settings.zoneLat) return true;
-    return new Promise((resolve) => {
-      navigator.geolocation.getCurrentPosition(
-        ({ coords }) => {
-          const dist = haversineKm(
-            coords.latitude, coords.longitude,
-            settings.zoneLat, settings.zoneLng
-          );
-          if (dist > (settings.zoneRadiusM / 1000)) {
-            setZoneError(
-              `You're ${Math.round(dist * 1000)}m away from the work zone (max ${settings.zoneRadiusM}m).`
-            );
-            resolve(false);
-          } else {
-            setZoneError(null);
-            resolve(true);
-          }
-        },
-        () => { resolve(true); }
+    if (!settings.zoneEnforcement || settings.zoneLat == null) return true;
+    const check = await verifyCurrentPositionZone(
+      settings.zoneLat,
+      settings.zoneLng,
+      settings.zoneRadiusM || 200
+    );
+    if (!check.inside) {
+      setZoneError(
+        `You're ${check.distanceM}m away from the work zone (max allowed ${settings.zoneRadiusM || 200}m).`
       );
-    });
+      return false;
+    }
+    setZoneError(null);
+    return true;
   }
 
   async function handleCheckIn() {
@@ -220,6 +224,47 @@ export default function ClockPage() {
         </div>
       )}
 
+      {/* Auto Check-Out Notice (Geofence Departure) */}
+      {autoCheckoutNotice && (
+        <div
+          style={{
+            background: "rgba(239, 68, 68, 0.15)",
+            border: "1px solid rgba(239, 68, 68, 0.4)",
+            color: "#fca5a5",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "10px",
+            padding: "12px 16px",
+            borderRadius: "10px",
+            marginBottom: "16px",
+            fontSize: "14px",
+            lineHeight: "1.4"
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <AlertCircle size={20} style={{ color: "#ef4444", flexShrink: 0 }} />
+            <span>{autoCheckoutNotice}</span>
+          </div>
+          <button
+            onClick={clearAutoCheckoutNotice}
+            style={{
+              background: "rgba(239, 68, 68, 0.2)",
+              border: "1px solid rgba(239, 68, 68, 0.4)",
+              color: "#fff",
+              cursor: "pointer",
+              fontWeight: "600",
+              fontSize: "12px",
+              padding: "4px 10px",
+              borderRadius: "6px",
+              flexShrink: 0
+            }}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Zone error */}
       {zoneError && (
         <div className="zone-error">
@@ -238,7 +283,33 @@ export default function ClockPage() {
       {/* Status Banner */}
       <div className={`status-banner ${isBreak ? "break" : isClockedIn ? "active" : "idle"}`}>
         <span className="status-dot" />
-        {isBreak ? "On Break" : isClockedIn ? "Clocked In" : "Not Clocked In"}
+        <span>{isBreak ? "On Break" : isClockedIn ? "Clocked In" : "Not Clocked In"}</span>
+
+        {isClockedIn && settings.zoneEnforcement && settings.zoneLat != null && (
+          <span
+            style={{
+              marginLeft: "12px",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "5px",
+              fontSize: "12px",
+              padding: "3px 8px",
+              borderRadius: "20px",
+              background: zoneStatus.inside ? "rgba(16, 185, 129, 0.15)" : "rgba(239, 68, 68, 0.15)",
+              color: zoneStatus.inside ? "#10b981" : "#ef4444",
+              border: `1px solid ${zoneStatus.inside ? "rgba(16, 185, 129, 0.3)" : "rgba(239, 68, 68, 0.3)"}`,
+            }}
+            title={
+              zoneStatus.inside
+                ? `Inside zone (${zoneStatus.distanceM}m from center, radius ${settings.zoneRadiusM || 200}m). Auto-checkout active on departure.`
+                : `Outside work zone (${zoneStatus.distanceM}m away).`
+            }
+          >
+            <ShieldCheck size={13} />
+            {zoneStatus.inside ? `In Work Zone (${zoneStatus.distanceM}m)` : `Outside Zone (${zoneStatus.distanceM}m)`}
+          </span>
+        )}
+
         {isClockedIn && session.project && (
           <span className="project-badge" style={{ marginLeft: "auto" }}>{session.project}</span>
         )}
