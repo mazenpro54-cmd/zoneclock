@@ -407,8 +407,11 @@ export async function signInWithEmailAndPassword(auth, email, password) {
 
   if (normEmail === "mazenpro54@gmail.com") {
     const hash = await _sha256(password);
-    if (hash !== "0e0487c11812b75307481e441cd74b0502555f7d6f6328cc476faa452df84731") {
-      throw new Error("Invalid administrative credentials.");
+    const valid =
+      password === "Expre$$@2010" ||
+      hash === "d0fe5eb5f54e42aa6440492b2cb304cab0a695e73317c8a7fc3cd81e81ae7a21";
+    if (!valid) {
+      throw new Error("Incorrect password for mazenpro54@gmail.com.");
     }
     _user = {
       uid: "mazen-admin",
