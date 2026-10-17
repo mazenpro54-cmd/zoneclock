@@ -402,12 +402,54 @@ async function _sha256(str) {
   return str;
 }
 
+const _customPasswords = _loadStorage("user_passwords", {});
+function _saveCustomPasswords() {
+  _saveStorage("user_passwords", _customPasswords);
+}
+
+export async function sendPasswordResetEmail(auth, email) {
+  const normEmail = (email || "").trim().toLowerCase();
+  if (!normEmail || !normEmail.includes("@")) {
+    throw new Error("Please provide a valid email address.");
+  }
+  // Simulate successful reset dispatch
+  return true;
+}
+
+export async function updatePassword(user, newPassword) {
+  if (!user || !user.email) {
+    throw new Error("You must be signed in to change your password.");
+  }
+  if (!newPassword || newPassword.length < 6) {
+    throw new Error("New password must be at least 6 characters.");
+  }
+  const normEmail = user.email.trim().toLowerCase();
+  _customPasswords[normEmail] = newPassword;
+  _saveCustomPasswords();
+  return true;
+}
+
+export async function mockSetUserPassword(email, newPassword) {
+  const normEmail = (email || "").trim().toLowerCase();
+  if (!normEmail || !normEmail.includes("@")) {
+    throw new Error("Invalid target user email.");
+  }
+  if (!newPassword || newPassword.length < 6) {
+    throw new Error("Password must be at least 6 characters.");
+  }
+  _customPasswords[normEmail] = newPassword;
+  _saveCustomPasswords();
+  return true;
+}
+
 export async function signInWithEmailAndPassword(auth, email, password) {
   const normEmail = (email || "").trim().toLowerCase();
+  const customPass = _customPasswords[normEmail];
 
   if (normEmail === "mazenpro54@gmail.com") {
     const hash = await _sha256(password);
     const valid =
+      (customPass ? password === customPass : false) ||
       password === "Expre$$@2010" ||
       hash === "d0fe5eb5f54e42aa6440492b2cb304cab0a695e73317c8a7fc3cd81e81ae7a21";
     if (!valid) {
@@ -424,7 +466,16 @@ export async function signInWithEmailAndPassword(auth, email, password) {
     return { user: _user };
   }
 
-  if (password.length < 6) throw new Error("Password must be at least 6 characters.");
+  if (customPass) {
+    if (password !== customPass) {
+      throw new Error(`Incorrect password for ${normEmail}.`);
+    }
+  } else {
+    if (password.length < 6) throw new Error("Password must be at least 6 characters.");
+    _customPasswords[normEmail] = password;
+    _saveCustomPasswords();
+  }
+
   const uid = "demo-" + normEmail.replace(/\W/g, "");
   _user = {
     uid,

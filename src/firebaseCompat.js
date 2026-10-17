@@ -15,6 +15,9 @@ const USE_MOCK =
 
 const compat = USE_MOCK ? mock : { ...realAuth, ...realFirestore };
 
+export const isMockAuth = USE_MOCK;
+export const mockSetUserPassword = mock.mockSetUserPassword;
+
 export const {
   // Auth
   signInWithPopup,
@@ -23,6 +26,8 @@ export const {
   signOut,
   onAuthStateChanged,
   updateProfile,
+  sendPasswordResetEmail,
+  updatePassword,
   // Firestore
   doc,
   collection,

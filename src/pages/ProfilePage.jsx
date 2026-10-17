@@ -7,7 +7,7 @@ import { TIMEZONES } from "../services/timezone";
 import { sendWebhookNotification } from "../services/webhooks";
 import {
   User, Mail, Shield, LogOut, Globe, MapPin, Bell,
-  Clock, Download, CheckCircle, Navigation, MessageSquare, Send, Compass, Fingerprint, Sparkles, AlertTriangle
+  Clock, Download, CheckCircle, Navigation, MessageSquare, Send, Compass, Fingerprint, Sparkles, AlertTriangle, KeyRound
 } from "lucide-react";
 import GoogleMapsZonePicker from "../components/GoogleMapsZonePicker";
 import {
@@ -18,7 +18,7 @@ import {
 } from "../services/biometrics";
 
 export default function ProfilePage() {
-  const { user, profile, logout } = useAuth();
+  const { user, profile, logout, changePassword } = useAuth();
   const { settings, updateSettings } = useSettings();
 
   const [displayName, setDisplayName] = useState(profile?.displayName || "");
@@ -31,6 +31,12 @@ export default function ProfilePage() {
   const [biometricsSupported, setBiometricsSupported] = useState(false);
   const [biometricsEnrolled, setBiometricsEnrolled] = useState(isBiometricEnrolled());
   const [biometricRegistering, setBiometricRegistering] = useState(false);
+
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [pwdLoading, setPwdLoading] = useState(false);
+  const [pwdSuccess, setPwdSuccess] = useState("");
+  const [pwdError, setPwdError] = useState("");
 
   useEffect(() => {
     isBiometricsAvailable().then(setBiometricsSupported);
@@ -129,6 +135,32 @@ export default function ProfilePage() {
     });
     setWebhookTested(true);
     setTimeout(() => setWebhookTested(false), 3000);
+  }
+
+  async function handleChangePassword(e) {
+    e.preventDefault();
+    setPwdError("");
+    setPwdSuccess("");
+    if (!newPassword || newPassword.length < 6) {
+      setPwdError("Password must be at least 6 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPwdError("Passwords do not match.");
+      return;
+    }
+    setPwdLoading(true);
+    try {
+      await changePassword(newPassword);
+      setPwdSuccess("Password updated successfully!");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => setPwdSuccess(""), 4000);
+    } catch (err) {
+      setPwdError(err.message || "Failed to update password.");
+    } finally {
+      setPwdLoading(false);
+    }
   }
 
   return (
@@ -457,6 +489,63 @@ export default function ProfilePage() {
                   </button>
                 </div>
               )}
+            </div>
+
+            {/* Account Security & Password */}
+            <div className="zone-box">
+              <div className="zone-box-header">
+                <div>
+                  <h4 style={{ fontSize: "0.9rem", color: "var(--text)", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <KeyRound size={16} style={{ color: "var(--accent)" }} />
+                    Account Security & Password
+                  </h4>
+                  <p className="muted-small">Change your account sign-in password</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleChangePassword} style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                  <label className="field" style={{ margin: 0 }}>
+                    <span>New Password</span>
+                    <input
+                      type="password"
+                      placeholder="••••••••"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      minLength={6}
+                      required
+                    />
+                  </label>
+                  <label className="field" style={{ margin: 0 }}>
+                    <span>Confirm Password</span>
+                    <input
+                      type="password"
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      minLength={6}
+                      required
+                    />
+                  </label>
+                </div>
+
+                {pwdError && <p className="error-msg" style={{ margin: "2px 0 0" }}>{pwdError}</p>}
+                {pwdSuccess && (
+                  <p style={{ color: "#10b981", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "6px", margin: "2px 0 0" }}>
+                    <CheckCircle size={14} /> {pwdSuccess}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={pwdLoading || !newPassword}
+                  className="btn-outline"
+                  style={{ alignSelf: "flex-start", marginTop: "4px" }}
+                >
+                  <KeyRound size={14} />
+                  {pwdLoading ? "Updating…" : "Update Password"}
+                </button>
+              </form>
             </div>
           </div>
 

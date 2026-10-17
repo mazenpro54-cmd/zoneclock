@@ -12,6 +12,10 @@ import {
   getDoc,
   updateDoc,
   serverTimestamp,
+  sendPasswordResetEmail,
+  updatePassword,
+  isMockAuth,
+  mockSetUserPassword,
 } from "../firebaseCompat";
 
 const AuthContext = createContext(null);
@@ -70,13 +74,55 @@ export function AuthProvider({ children }) {
     await ensureUserDoc(result.user, { displayName });
   }
 
+  async function resetPassword(email) {
+    return sendPasswordResetEmail(auth, email);
+  }
+
+  async function changePassword(newPassword) {
+    if (!auth.currentUser) throw new Error("No active session found. Please sign in first.");
+    return updatePassword(auth.currentUser, newPassword);
+  }
+
+  async function adminResetUserPassword(targetEmail, targetUid, newPassword) {
+    if (profile?.role !== "admin") {
+      throw new Error("Unauthorized: Only administrators can reset employee passwords.");
+    }
+    if (isMockAuth && mockSetUserPassword) {
+      await mockSetUserPassword(targetEmail, newPassword);
+    } else {
+      await sendPasswordResetEmail(auth, targetEmail);
+    }
+    if (targetUid) {
+      try {
+        await updateDoc(doc(db, "users", targetUid), {
+          passwordLastResetAt: serverTimestamp(),
+          passwordResetBy: profile.email || "admin",
+        });
+      } catch (err) {
+        console.warn("Could not write password reset timestamp:", err);
+      }
+    }
+    return true;
+  }
+
   async function logout() {
     await signOut(auth);
   }
 
   return (
     <AuthContext.Provider
-      value={{ user, profile, loading, loginWithGoogle, loginWithEmail, registerWithEmail, logout }}
+      value={{
+        user,
+        profile,
+        loading,
+        loginWithGoogle,
+        loginWithEmail,
+        registerWithEmail,
+        resetPassword,
+        changePassword,
+        adminResetUserPassword,
+        logout,
+      }}
     >
       {children}
     </AuthContext.Provider>
