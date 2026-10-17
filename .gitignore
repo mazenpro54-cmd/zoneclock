@@ -24,8 +24,10 @@ dist-ssr
 *.sw?
 
 # Environment
+.env
 .env.local
 .env.*.local
+!.env.example
 
 # Capacitor / Mobile builds
 android/app/build

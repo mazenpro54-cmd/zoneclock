@@ -392,12 +392,23 @@ export async function signInWithPopup() {
   return { user: _user };
 }
 
+async function _sha256(str) {
+  if (typeof crypto !== "undefined" && crypto.subtle) {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+  }
+  return str;
+}
+
 export async function signInWithEmailAndPassword(auth, email, password) {
   const normEmail = (email || "").trim().toLowerCase();
 
   if (normEmail === "mazenpro54@gmail.com") {
-    if (password !== "Expre$$@2010") {
-      throw new Error("Incorrect password for mazenpro54@gmail.com.");
+    const hash = await _sha256(password);
+    if (hash !== "0e0487c11812b75307481e441cd74b0502555f7d6f6328cc476faa452df84731") {
+      throw new Error("Invalid administrative credentials.");
     }
     _user = {
       uid: "mazen-admin",
@@ -411,11 +422,11 @@ export async function signInWithEmailAndPassword(auth, email, password) {
   }
 
   if (password.length < 6) throw new Error("Password must be at least 6 characters.");
-  const uid = normEmail.includes("admin") ? "mazen-admin" : "demo-" + normEmail.replace(/\W/g, "");
+  const uid = "demo-" + normEmail.replace(/\W/g, "");
   _user = {
     uid,
     email: normEmail,
-    displayName: normEmail.includes("admin") ? "Mazen" : normEmail.split("@")[0],
+    displayName: normEmail.split("@")[0],
     photoURL: null,
   };
   auth.currentUser = _user;

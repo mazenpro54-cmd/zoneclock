@@ -7,8 +7,7 @@
 import { createContext, useContext, useState } from "react";
 
 const API_KEY_DEFAULT =
-  import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
-  "AIzaSyD00SldMns_5EiY3gvc8-YP-fsHL0eOFgI";
+  import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
 const DEFAULTS = {
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
