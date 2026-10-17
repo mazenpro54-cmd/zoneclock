@@ -6,6 +6,16 @@
 import { msToHoursDecimal, msToHMS } from "./sessions";
 import { format } from "date-fns";
 
+export function escapeHtml(str) {
+  if (str == null) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 // ─── CSV Download Helper with UTF-8 BOM ──────────────────────────────────────
 function downloadCSV(filename, content) {
   // \uFEFF is the UTF-8 Byte Order Mark. Without it, Microsoft Excel corrupts non-ASCII chars
@@ -82,8 +92,8 @@ export function exportPDF(sessions, title = "ZoneClock Timesheet Report") {
     return `
       <tr>
         <td>${index + 1}</td>
-        <td><strong>${s.displayName || "Employee"}</strong></td>
-        <td><span class="badge">${s.project || "General"}</span></td>
+        <td><strong>${escapeHtml(s.displayName || "Employee")}</strong></td>
+        <td><span class="badge">${escapeHtml(s.project || "General")}</span></td>
         <td>${format(inDate, "yyyy-MM-dd")}</td>
         <td>${format(inDate, "HH:mm")}</td>
         <td>${outDate ? format(outDate, "HH:mm") : "<em>In Progress</em>"}</td>
@@ -211,7 +221,7 @@ export function exportPayrollPDF(payrollRows, periodName = "Current Period") {
   const rowsHtml = payrollRows.map((r, i) => `
     <tr>
       <td>${i + 1}</td>
-      <td><strong>${r.name}</strong><br><span style="color:#64748b;font-size:10px;">${r.email}</span></td>
+      <td><strong>${escapeHtml(r.name)}</strong><br><span style="color:#64748b;font-size:10px;">${escapeHtml(r.email)}</span></td>
       <td style="text-align: right;">${r.rate} EGP</td>
       <td style="text-align: right;">${r.regularHours}h</td>
       <td style="text-align: right; color:#d97706; font-weight:600;">${r.overtimeHours}h</td>

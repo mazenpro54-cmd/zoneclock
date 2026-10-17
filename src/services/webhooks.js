@@ -8,6 +8,12 @@ export async function sendWebhookNotification(settings, payload) {
     return false;
   }
 
+  // Security: Enforce HTTPS scheme for all external webhook requests
+  if (!settings.webhookUrl.startsWith("https://")) {
+    console.warn("[ZoneClock Webhook Blocked] Insecure webhook URL rejected. URLs must use https://");
+    return false;
+  }
+
   // Check granular notification triggers if defined
   const triggers = settings.webhookTriggers || {
     checkIn: true,
