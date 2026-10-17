@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { getSessions } from "../services/sessions";
 import { calculateEmployeePayroll, exportPayrollCSV } from "../services/payroll";
+import { exportPayrollPDF } from "../services/export";
 import { collection, getDocs, query, orderBy } from "../firebaseCompat";
 import { db } from "../firebase";
 import {
@@ -95,6 +96,13 @@ export default function PayrollPage() {
             title="Export Payroll CSV"
           >
             <Download size={14} /> Export CSV
+          </button>
+          <button
+            className="btn-outline"
+            onClick={() => exportPayrollPDF(payrollRows, RANGES[rangeIndex].label)}
+            title="Export Official Payroll PDF Voucher"
+          >
+            <FileText size={14} /> Export PDF
           </button>
         </div>
       </div>

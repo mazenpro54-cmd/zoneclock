@@ -167,6 +167,13 @@ export function useActiveSession() {
       onExit: async ({ distanceM, maxAllowedM }) => {
         setZoneStatus({ inside: false, distanceM });
         if (settings.autoCheckoutOnExit !== false) {
+          sendWebhookNotification(settings, {
+            event: "zone_exit_breach",
+            employeeName,
+            project: sessionRef.current?.project,
+            distanceM,
+            maxAllowedM,
+          });
           const reason = `Auto Check-Out: Exited Work Zone (${distanceM}m away)`;
           await checkOut(reason);
           setAutoCheckoutNotice(

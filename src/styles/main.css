@@ -281,6 +281,26 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
 }
 .btn-checkin:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(34,197,94,0.45); }
 
+.btn-biometric {
+  background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
+  color: #fff;
+  border-radius: 12px;
+  padding: 0.9rem 1.25rem;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.btn-biometric:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(99, 102, 241, 0.5);
+  background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+}
+
 .btn-checkout {
   background: linear-gradient(135deg, var(--danger) 0%, #b91c1c 100%);
   color: #fff;

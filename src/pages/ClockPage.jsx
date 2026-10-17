@@ -13,8 +13,9 @@ import { verifyCurrentPositionZone } from "../services/geofence";
 import {
   LogIn, LogOut, Coffee, Clock, MapPin, Tag, FileText,
   Bell, BellOff, AlertTriangle, CheckCircle2, Target,
-  Play, Pause, RotateCcw, AlertCircle, ShieldCheck
+  Play, Pause, RotateCcw, AlertCircle, ShieldCheck, Fingerprint, Sparkles
 } from "lucide-react";
+import { verifyBiometricClockIn, isBiometricsAvailable } from "../services/biometrics";
 
 const PROJECTS = [
   "General", "Development", "Design", "Marketing",
@@ -128,17 +129,38 @@ export default function ClockPage() {
     return true;
   }
 
-  async function handleCheckIn() {
+  const [biometricsAvailable, setBiometricsAvailable] = useState(false);
+
+  useEffect(() => {
+    isBiometricsAvailable().then(setBiometricsAvailable);
+  }, []);
+
+  async function handleCheckIn(requireBiometric = false) {
     const inZone = await verifyZone();
     if (!inZone) return;
+
+    if (requireBiometric || settings.biometricClockIn) {
+      try {
+        await verifyBiometricClockIn(profile?.email || "employee@zoneclock.app");
+      } catch (err) {
+        alert(err.message || "Biometric scan cancelled");
+        return;
+      }
+    }
+
     setBusy(true);
     try {
-      await checkIn({ project, note: note || journalNote });
+      const extraTag = (requireBiometric || settings.biometricClockIn) ? " [Biometric Verified]" : "";
+      await checkIn({ project, note: (note || journalNote) + extraTag });
       setNote("");
       setJournalNote("");
     } finally {
       setBusy(false);
     }
+  }
+
+  async function handleBiometricCheckIn() {
+    return handleCheckIn(true);
   }
 
   async function handleCheckOut() {
@@ -406,10 +428,24 @@ export default function ClockPage() {
                 maxLength={120}
               />
             </label>
-            <button onClick={handleCheckIn} disabled={busy} className="btn-checkin">
-              <LogIn size={18} />
-              Check In
-            </button>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
+              {biometricsAvailable && (
+                <button
+                  type="button"
+                  onClick={handleBiometricCheckIn}
+                  disabled={busy}
+                  className="btn-biometric"
+                  title="Authenticate via Face ID, Touch ID, or Windows Hello to check in instantly"
+                >
+                  <Fingerprint size={19} />
+                  <span>One-Tap Biometric Clock In</span>
+                </button>
+              )}
+              <button onClick={() => handleCheckIn(false)} disabled={busy} className="btn-checkin">
+                <LogIn size={18} />
+                Check In
+              </button>
+            </div>
           </>
         )}
       </div>

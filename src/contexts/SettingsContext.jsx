@@ -23,6 +23,14 @@ const DEFAULTS = {
   webhookEnabled: false,
   webhookType: "slack", // "slack" | "discord" | "custom"
   webhookUrl: "",
+  webhookTriggers: {
+    checkIn: true,
+    checkOut: true,
+    zoneExit: true,
+    overtime: true,
+  },
+  biometricClockIn: false,
+  backgroundGeofence: true,
   googleMapsApiKey: API_KEY_DEFAULT,
 };
 

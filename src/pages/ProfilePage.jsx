@@ -7,9 +7,15 @@ import { TIMEZONES } from "../services/timezone";
 import { sendWebhookNotification } from "../services/webhooks";
 import {
   User, Mail, Shield, LogOut, Globe, MapPin, Bell,
-  Clock, Download, CheckCircle, Navigation, MessageSquare, Send, Compass
+  Clock, Download, CheckCircle, Navigation, MessageSquare, Send, Compass, Fingerprint, Sparkles, AlertTriangle
 } from "lucide-react";
 import GoogleMapsZonePicker from "../components/GoogleMapsZonePicker";
+import {
+  isBiometricsAvailable,
+  isBiometricEnrolled,
+  registerBiometricCredential,
+  removeBiometricCredential
+} from "../services/biometrics";
 
 export default function ProfilePage() {
   const { user, profile, logout } = useAuth();
@@ -22,6 +28,13 @@ export default function ProfilePage() {
   const [installPrompt, setInstallPrompt] = useState(null);
   const [installed, setInstalled] = useState(false);
   const [webhookTested, setWebhookTested] = useState(false);
+  const [biometricsSupported, setBiometricsSupported] = useState(false);
+  const [biometricsEnrolled, setBiometricsEnrolled] = useState(isBiometricEnrolled());
+  const [biometricRegistering, setBiometricRegistering] = useState(false);
+
+  useEffect(() => {
+    isBiometricsAvailable().then(setBiometricsSupported);
+  }, []);
 
   // Listen for PWA install event
   useEffect(() => {
@@ -81,6 +94,28 @@ export default function ProfilePage() {
       },
       { enableHighAccuracy: true }
     );
+  }
+
+  async function handleRegisterBiometrics() {
+    setBiometricRegistering(true);
+    try {
+      await registerBiometricCredential(user?.email || "employee@zoneclock.app");
+      setBiometricsEnrolled(true);
+      updateSettings({ biometricClockIn: true });
+      alert("✅ Biometric credential registered successfully! You can now use Face ID / Touch ID / Fingerprint to clock in.");
+    } catch (err) {
+      alert("Registration failed: " + err.message);
+    } finally {
+      setBiometricRegistering(false);
+    }
+  }
+
+  function handleRemoveBiometrics() {
+    if (confirm("Disable and remove stored biometric credentials on this device?")) {
+      removeBiometricCredential();
+      setBiometricsEnrolled(false);
+      updateSettings({ biometricClockIn: false });
+    }
   }
 
   async function handleTestWebhook() {
@@ -260,14 +295,75 @@ export default function ProfilePage() {
               )}
             </div>
 
-            {/* Team Chat & Webhooks Section */}
+            {/* One-Tap Biometric Clock-In Section */}
             <div className="zone-box">
               <div className="zone-box-header">
                 <div>
-                  <h4 style={{ fontSize: "0.9rem", color: "var(--text)" }}>
-                    Team Chat & Webhooks
+                  <h4 style={{ fontSize: "0.9rem", color: "var(--text)", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <Fingerprint size={16} style={{ color: "#6366f1" }} />
+                    One-Tap Biometric Clock-In
                   </h4>
-                  <p className="muted-small">Post check-in/out alerts to Slack or Discord</p>
+                  <p className="muted-small">Authenticate via Face ID, Touch ID, or Windows Hello for instant check-in</p>
+                </div>
+                <input
+                  type="checkbox"
+                  className="toggle-switch"
+                  checked={settings.biometricClockIn || false}
+                  onChange={(e) => updateSettings({ biometricClockIn: e.target.checked })}
+                />
+              </div>
+
+              {settings.biometricClockIn && (
+                <div className="zone-controls" style={{ paddingTop: "0.75rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", flexWrap: "wrap" }}>
+                    <div>
+                      <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "var(--text)" }}>
+                        {biometricsEnrolled ? "✅ Device Biometrics Enrolled" : "⚠️ Biometrics Not Registered Yet"}
+                      </span>
+                      <p className="muted-small" style={{ margin: "2px 0 0" }}>
+                        {biometricsEnrolled
+                          ? "Your fingerprint / Face ID is registered and ready for 1-tap check in."
+                          : "Enroll your biometric passkey on this browser to activate."}
+                      </p>
+                    </div>
+
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      {!biometricsEnrolled ? (
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          style={{ fontSize: "12px", padding: "6px 12px" }}
+                          onClick={handleRegisterBiometrics}
+                          disabled={biometricRegistering}
+                        >
+                          <Sparkles size={14} />
+                          {biometricRegistering ? "Scanning..." : "Register Biometrics"}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn-outline"
+                          style={{ fontSize: "12px", padding: "6px 10px", color: "#ef4444" }}
+                          onClick={handleRemoveBiometrics}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Team Chat & Instant Webhook Alerts */}
+            <div className="zone-box">
+              <div className="zone-box-header">
+                <div>
+                  <h4 style={{ fontSize: "0.9rem", color: "var(--text)", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <MessageSquare size={16} style={{ color: "#10b981" }} />
+                    Team Chat & Real-Time Alerts
+                  </h4>
+                  <p className="muted-small">Post check-in, geofence departure, and overtime alerts to Slack or Discord</p>
                 </div>
                 <input
                   type="checkbox"
@@ -301,9 +397,59 @@ export default function ProfilePage() {
                     />
                   </label>
 
+                  {/* Granular Alert Triggers */}
+                  <div style={{ marginTop: "10px", padding: "10px", background: "rgba(255,255,255,0.02)", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                    <span style={{ fontSize: "0.8rem", fontWeight: "600", color: "var(--text)", display: "block", marginBottom: "8px" }}>
+                      Active Alert Triggers
+                    </span>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: "0.8rem" }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+                        <input
+                          type="checkbox"
+                          checked={settings.webhookTriggers?.checkIn !== false}
+                          onChange={(e) => updateSettings({
+                            webhookTriggers: { ...settings.webhookTriggers, checkIn: e.target.checked }
+                          })}
+                        />
+                        <span>🟢 Check-In</span>
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+                        <input
+                          type="checkbox"
+                          checked={settings.webhookTriggers?.checkOut !== false}
+                          onChange={(e) => updateSettings({
+                            webhookTriggers: { ...settings.webhookTriggers, checkOut: e.target.checked }
+                          })}
+                        />
+                        <span>🔴 Check-Out</span>
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+                        <input
+                          type="checkbox"
+                          checked={settings.webhookTriggers?.zoneExit !== false}
+                          onChange={(e) => updateSettings({
+                            webhookTriggers: { ...settings.webhookTriggers, zoneExit: e.target.checked }
+                          })}
+                        />
+                        <span>🚨 Zone Departure</span>
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+                        <input
+                          type="checkbox"
+                          checked={settings.webhookTriggers?.overtime !== false}
+                          onChange={(e) => updateSettings({
+                            webhookTriggers: { ...settings.webhookTriggers, overtime: e.target.checked }
+                          })}
+                        />
+                        <span>⏰ Daily Overtime</span>
+                      </label>
+                    </div>
+                  </div>
+
                   <button
                     type="button"
                     className="btn-outline btn-sm-block"
+                    style={{ marginTop: "12px" }}
                     onClick={handleTestWebhook}
                   >
                     <Send size={13} />
