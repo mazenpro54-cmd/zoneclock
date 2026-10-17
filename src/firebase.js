@@ -4,6 +4,10 @@
  * If VITE_FIREBASE_API_KEY is missing or still says "YOUR_API_KEY",
  * the app runs in DEMO MODE using an in-memory mock (no network needed).
  */
+import * as mock from "./firebase.mock.js";
+import { initializeApp } from "firebase/app";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 const USE_MOCK =
   !import.meta.env.VITE_FIREBASE_API_KEY ||
@@ -12,16 +16,10 @@ const USE_MOCK =
 let auth, db, googleProvider;
 
 if (USE_MOCK) {
-  console.warn("[ZoneClock] No Firebase config found — running in DEMO MODE (in-memory).");
-  const mock = await import("./firebase.mock.js");
   auth = mock.auth;
   db = mock.db;
   googleProvider = mock.googleProvider;
 } else {
-  const { initializeApp } = await import("firebase/app");
-  const { getAuth, GoogleAuthProvider } = await import("firebase/auth");
-  const { getFirestore } = await import("firebase/firestore");
-
   const firebaseConfig = {
     apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
     authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
