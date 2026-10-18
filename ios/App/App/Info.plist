@@ -70,5 +70,7 @@
 	<string>ZoneClock needs your location to verify shift check-ins within assigned geofenced work zones.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>ZoneClock uses background location to ensure seamless check-in tracking while inside active work zones.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>ZoneClock uses Face ID / Touch ID for secure, instant biometric check-in verification.</string>
 </dict>
 </plist>

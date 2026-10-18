@@ -12,10 +12,9 @@
 #   public *;
 #}
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
-
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Keep Capacitor plugin classes and methods for reflection
+-keep public class * extends com.getcapacitor.Plugin { *; }
+-keep public class com.getcapacitor.** { *; }
+-keepclassmembers class * {
+    @com.getcapacitor.PluginMethod public *;
+}
