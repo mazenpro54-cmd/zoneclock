@@ -7,6 +7,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      injectRegister: false,
       registerType: 'autoUpdate',
       includeAssets: ['clock.svg', 'favicon.svg'],
       manifest: {
@@ -37,6 +38,7 @@ export default defineConfig({
     }),
   ],
   build: {
+    target: 'es2020',
     rollupOptions: {
       output: {
         manualChunks(id) {

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { SettingsProvider } from "./contexts/SettingsContext";
 import LoginPage from "./pages/LoginPage";
@@ -62,21 +62,36 @@ function AppLayout() {
 
 function PublicRoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="page-loader full-screen">
+        <Clock size={40} className="spin" />
+        <p>Loading ZoneClock…</p>
+      </div>
+    );
+  }
   if (user) return <Navigate to="/" replace />;
   return children;
 }
 
 export default function App() {
+  const isNative =
+    typeof window !== "undefined" &&
+    (Boolean(window.Capacitor?.isNativePlatform?.()) ||
+      window.location.protocol === "capacitor:" ||
+      window.location.pathname.endsWith(".html"));
+
+  const RouterComponent = isNative ? HashRouter : BrowserRouter;
+
   return (
     <AuthProvider>
       <SettingsProvider>
-        <BrowserRouter>
+        <RouterComponent>
           <Routes>
             <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
             <Route path="/*" element={<RequireAuth><AppLayout /></RequireAuth>} />
           </Routes>
-        </BrowserRouter>
+        </RouterComponent>
       </SettingsProvider>
     </AuthProvider>
   );

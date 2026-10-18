@@ -48,13 +48,18 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (fbUser) => {
-      setUser(fbUser);
-      if (fbUser) {
-        await ensureUserDoc(fbUser);
-      } else {
-        setProfile(null);
+      try {
+        setUser(fbUser);
+        if (fbUser) {
+          await ensureUserDoc(fbUser);
+        } else {
+          setProfile(null);
+        }
+      } catch (err) {
+        console.error("Auth state resolution error:", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
     return unsub;
   }, []);
