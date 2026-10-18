@@ -1,5 +1,6 @@
 import React, { StrictMode, Component } from 'react'
 import { createRoot } from 'react-dom/client'
+import { Capacitor } from '@capacitor/core'
 import './styles/main.css'
 import App from './App.jsx'
 
@@ -54,11 +55,23 @@ class GlobalErrorBoundary extends Component {
   }
 }
 
+// Clean up any stale service workers in native mobile apps
+if (typeof window !== 'undefined' && Capacitor.isNativePlatform()) {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      for (const registration of registrations) {
+        registration.unregister();
+      }
+    }).catch(() => {});
+  }
+}
+
 // Only register PWA service worker in standard web browsers, never in native Capacitor APK
 if (
   typeof window !== 'undefined' &&
-  !window.Capacitor?.isNativePlatform?.() &&
+  !Capacitor.isNativePlatform() &&
   !window.location.protocol.startsWith('capacitor') &&
+  !window.location.protocol.startsWith('file') &&
   !window.location.pathname.endsWith('.html') &&
   'serviceWorker' in navigator &&
   (window.location.protocol === 'https:' || window.location.hostname === 'localhost')
@@ -76,4 +89,5 @@ createRoot(document.getElementById('root')).render(
       <App />
     </GlobalErrorBoundary>
   </StrictMode>,
-)
+);
+window.__react_mounted = true;

@@ -1,4 +1,5 @@
 import { BrowserRouter, HashRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { SettingsProvider } from "./contexts/SettingsContext";
 import LoginPage from "./pages/LoginPage";
@@ -77,8 +78,10 @@ function PublicRoute({ children }) {
 export default function App() {
   const isNative =
     typeof window !== "undefined" &&
-    (Boolean(window.Capacitor?.isNativePlatform?.()) ||
+    (Capacitor.isNativePlatform() ||
       window.location.protocol === "capacitor:" ||
+      window.location.protocol === "file:" ||
+      (window.location.hostname === "localhost" && window.location.port === "") ||
       window.location.pathname.endsWith(".html"));
 
   const RouterComponent = isNative ? HashRouter : BrowserRouter;
