@@ -189,16 +189,25 @@ export default function CheckInMap({ sessions = [], height = "420px" }) {
   }, [displayedSessions]);
 
   return (
-    <div className="map-wrapper" style={{ background: "var(--surface)", padding: "14px", borderRadius: "16px", border: "1px solid var(--border)" }}>
-      <div className="map-toolbar" style={{ marginBottom: "12px", display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "10px" }}>
-        <div className="map-title-row" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <Navigation size={18} className="text-brand" />
-          <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>Live Check-in GPS Locations ({displayedSessions.length})</span>
+    <div className="map-wrapper">
+      <div className="map-toolbar">
+        <div className="map-toolbar-top">
+          <div className="map-title-row">
+            <Navigation size={17} className="text-brand" />
+            <span className="map-title">Live Locations ({displayedSessions.length})</span>
+          </div>
+          <label className="map-filter-toggle">
+            <input
+              type="checkbox"
+              checked={filterActiveOnly}
+              onChange={(e) => setFilterActiveOnly(e.target.checked)}
+            />
+            <span>Active only</span>
+          </label>
         </div>
 
-        <div className="map-actions" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          {/* Layer switcher: Streets / Satellite / Terrain */}
-          <div style={{ display: "inline-flex", background: "rgba(255,255,255,0.06)", padding: "3px", borderRadius: "8px", border: "1px solid var(--border)" }}>
+        <div className="map-toolbar-bottom">
+          <div className="map-layer-switcher">
             {Object.values(TILE_PROVIDERS).map((p) => {
               const Icon = p.icon;
               const isSelected = mapType === p.id;
@@ -206,21 +215,8 @@ export default function CheckInMap({ sessions = [], height = "420px" }) {
                 <button
                   key={p.id}
                   type="button"
+                  className={`map-layer-btn ${isSelected ? "active" : ""}`}
                   onClick={() => setMapType(p.id)}
-                  style={{
-                    background: isSelected ? "var(--brand, #6366f1)" : "transparent",
-                    color: isSelected ? "#fff" : "var(--muted)",
-                    border: "none",
-                    padding: "4px 9px",
-                    borderRadius: "6px",
-                    fontSize: "0.76rem",
-                    fontWeight: isSelected ? 600 : 400,
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "4px",
-                    transition: "all 0.15s ease"
-                  }}
                   title={`Switch to ${p.label} view`}
                 >
                   <Icon size={12} />
@@ -232,30 +228,20 @@ export default function CheckInMap({ sessions = [], height = "420px" }) {
 
           <button
             type="button"
-            className="btn-outline btn-sm"
+            className="btn-outline btn-sm map-recenter-btn"
             onClick={handleRecenter}
             title="Recenter map on all employees"
-            style={{ padding: "4px 8px", display: "flex", alignItems: "center", gap: "4px", fontSize: "0.78rem" }}
           >
             <Crosshair size={13} />
             <span>Recenter</span>
           </button>
-
-          <label className="map-filter-toggle" style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.8rem", cursor: "pointer" }}>
-            <input
-              type="checkbox"
-              checked={filterActiveOnly}
-              onChange={(e) => setFilterActiveOnly(e.target.checked)}
-            />
-            <span>Active only</span>
-          </label>
         </div>
       </div>
 
       <div
         ref={mapContainerRef}
         className="leaflet-map-container"
-        style={{ height, width: "100%", borderRadius: "12px", overflow: "hidden", border: "1px solid var(--border)" }}
+        style={{ height }}
       />
     </div>
   );
