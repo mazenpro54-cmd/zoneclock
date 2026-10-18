@@ -1,15 +1,51 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { MapPin, Navigation, Eye, User, Clock, Layers } from "lucide-react";
+import { Navigation, Layers, Crosshair, Map, Globe, Mountain } from "lucide-react";
+
+// Real tile layers without watermarks or API key requirements
+const TILE_PROVIDERS = {
+  streets: {
+    id: "streets",
+    label: "Streets",
+    icon: Map,
+    url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    options: {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+    },
+  },
+  satellite: {
+    id: "satellite",
+    label: "Satellite",
+    icon: Globe,
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    options: {
+      attribution: 'Tiles &copy; Esri &mdash; DigitalGlobe, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, and GIS User Community',
+      maxZoom: 19,
+    },
+  },
+  terrain: {
+    id: "terrain",
+    label: "Terrain",
+    icon: Mountain,
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+    options: {
+      attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase',
+      maxZoom: 19,
+    },
+  },
+};
 
 export default function CheckInMap({ sessions = [], height = "420px" }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const layerGroupRef = useRef(null);
+  const tileLayerRef = useRef(null);
+  const [mapType, setMapType] = useState("streets");
   const [filterActiveOnly, setFilterActiveOnly] = useState(false);
 
-  // Filter sessions that have location
+  // Filter sessions that have valid coordinates
   const sessionsWithLoc = sessions.filter(
     (s) => s.location && typeof s.location.lat === "number" && typeof s.location.lng === "number"
   );
@@ -18,11 +54,11 @@ export default function CheckInMap({ sessions = [], height = "420px" }) {
     ? sessionsWithLoc.filter((s) => s.status === "active" || s.status === "break")
     : sessionsWithLoc;
 
+  // Initialize Map
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
     if (!mapInstanceRef.current) {
-      // Default to Cairo / Center
       const defaultCenter = [30.0444, 31.2357];
       const initialZoom = 12;
 
@@ -32,15 +68,49 @@ export default function CheckInMap({ sessions = [], height = "420px" }) {
         zoomControl: true,
       });
 
-      // CartoDB Voyager or OpenStreetMap
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-        attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap',
-        maxZoom: 19,
-      }).addTo(map);
+      // Initial Tile Layer
+      const initialProvider = TILE_PROVIDERS[mapType] || TILE_PROVIDERS.streets;
+      tileLayerRef.current = L.tileLayer(initialProvider.url, initialProvider.options).addTo(map);
 
       layerGroupRef.current = L.layerGroup().addTo(map);
       mapInstanceRef.current = map;
     }
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, []);
+
+  // Handle Map Type Switching (Streets / Satellite / Terrain)
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+
+    const map = mapInstanceRef.current;
+    if (tileLayerRef.current) {
+      map.removeLayer(tileLayerRef.current);
+    }
+
+    const provider = TILE_PROVIDERS[mapType] || TILE_PROVIDERS.streets;
+    tileLayerRef.current = L.tileLayer(provider.url, provider.options).addTo(map);
+  }, [mapType]);
+
+  // Recenter helper
+  const handleRecenter = useCallback(() => {
+    if (!mapInstanceRef.current) return;
+    const bounds = displayedSessions.map((s) => [s.location.lat, s.location.lng]);
+    if (bounds.length > 0) {
+      mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+    } else {
+      mapInstanceRef.current.setView([30.0444, 31.2357], 12);
+    }
+  }, [displayedSessions]);
+
+  // Update Markers when displayedSessions changes
+  useEffect(() => {
+    if (!mapInstanceRef.current || !layerGroupRef.current) return;
 
     const map = mapInstanceRef.current;
     const layerGroup = layerGroupRef.current;
@@ -114,19 +184,64 @@ export default function CheckInMap({ sessions = [], height = "420px" }) {
     });
 
     if (bounds.length > 0) {
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
     }
   }, [displayedSessions]);
 
   return (
-    <div className="map-wrapper">
-      <div className="map-toolbar">
-        <div className="map-title-row">
-          <Navigation size={16} className="text-brand" />
-          <span>Live Check-in GPS Locations ({displayedSessions.length})</span>
+    <div className="map-wrapper" style={{ background: "var(--surface)", padding: "14px", borderRadius: "16px", border: "1px solid var(--border)" }}>
+      <div className="map-toolbar" style={{ marginBottom: "12px", display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "10px" }}>
+        <div className="map-title-row" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <Navigation size={18} className="text-brand" />
+          <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>Live Check-in GPS Locations ({displayedSessions.length})</span>
         </div>
-        <div className="map-actions">
-          <label className="map-filter-toggle">
+
+        <div className="map-actions" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          {/* Layer switcher: Streets / Satellite / Terrain */}
+          <div style={{ display: "inline-flex", background: "rgba(255,255,255,0.06)", padding: "3px", borderRadius: "8px", border: "1px solid var(--border)" }}>
+            {Object.values(TILE_PROVIDERS).map((p) => {
+              const Icon = p.icon;
+              const isSelected = mapType === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setMapType(p.id)}
+                  style={{
+                    background: isSelected ? "var(--brand, #6366f1)" : "transparent",
+                    color: isSelected ? "#fff" : "var(--muted)",
+                    border: "none",
+                    padding: "4px 9px",
+                    borderRadius: "6px",
+                    fontSize: "0.76rem",
+                    fontWeight: isSelected ? 600 : 400,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    transition: "all 0.15s ease"
+                  }}
+                  title={`Switch to ${p.label} view`}
+                >
+                  <Icon size={12} />
+                  <span>{p.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <button
+            type="button"
+            className="btn-outline btn-sm"
+            onClick={handleRecenter}
+            title="Recenter map on all employees"
+            style={{ padding: "4px 8px", display: "flex", alignItems: "center", gap: "4px", fontSize: "0.78rem" }}
+          >
+            <Crosshair size={13} />
+            <span>Recenter</span>
+          </button>
+
+          <label className="map-filter-toggle" style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.8rem", cursor: "pointer" }}>
             <input
               type="checkbox"
               checked={filterActiveOnly}
@@ -136,10 +251,11 @@ export default function CheckInMap({ sessions = [], height = "420px" }) {
           </label>
         </div>
       </div>
+
       <div
         ref={mapContainerRef}
         className="leaflet-map-container"
-        style={{ height, width: "100%", borderRadius: "12px" }}
+        style={{ height, width: "100%", borderRadius: "12px", overflow: "hidden", border: "1px solid var(--border)" }}
       />
     </div>
   );
