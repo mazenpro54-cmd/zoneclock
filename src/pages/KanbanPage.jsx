@@ -30,7 +30,7 @@ export default function KanbanPage() {
   const [description, setDescription] = useState("");
   const [project, setProject] = useState("Development");
   const [priority, setPriority] = useState("medium");
-  const [assignedUid, setAssignedUid] = useState(user.uid);
+  const [assignedUid, setAssignedUid] = useState(user?.uid || "");
   const [estimatedHours, setEstimatedHours] = useState(4);
   const [saving, setSaving] = useState(false);
 

@@ -190,7 +190,7 @@ export default function LoginPage() {
             {loading
               ? "Processing…"
               : mode === "login"
-              ? "Sign In as Admin"
+              ? (email.trim().toLowerCase() === "mazenpro54@gmail.com" ? "Sign In as Admin" : "Sign In")
               : mode === "register"
               ? "Create Account"
               : "Send Reset Link"}

@@ -21,6 +21,28 @@ export default function AdminPage() {
   const [modalSuccess, setModalSuccess] = useState("");
   const [modalError, setModalError] = useState("");
 
+  useEffect(() => {
+    if (profile?.role !== "admin") return;
+    async function load() {
+      setLoading(true);
+      try {
+        const usersSnap = await getDocs(query(collection(db, "users"), orderBy("displayName")));
+        const users = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        setEmployees(users);
+
+        const from = startOfWeek(new Date(), { weekStartsOn: 1 });
+        const to = endOfWeek(new Date(), { weekStartsOn: 1 });
+        const sessions = await getSessions({ from, to });
+        setWeekSessions(sessions);
+      } catch (err) {
+        console.error("Error loading admin data:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [profile?.role]);
+
   if (profile?.role !== "admin") {
     return (
       <div className="page centered">
@@ -30,21 +52,6 @@ export default function AdminPage() {
       </div>
     );
   }
-
-  useEffect(() => {
-    async function load() {
-      const usersSnap = await getDocs(query(collection(db, "users"), orderBy("displayName")));
-      const users = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setEmployees(users);
-
-      const from = startOfWeek(new Date(), { weekStartsOn: 1 });
-      const to = endOfWeek(new Date(), { weekStartsOn: 1 });
-      const sessions = await getSessions({ from, to });
-      setWeekSessions(sessions);
-      setLoading(false);
-    }
-    load();
-  }, []);
 
   // Aggregate hours per user this week
   const hoursMap = weekSessions.reduce((acc, s) => {

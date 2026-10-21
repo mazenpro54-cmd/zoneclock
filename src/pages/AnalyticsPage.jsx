@@ -20,12 +20,16 @@ export default function AnalyticsPage() {
       setLoading(true);
       const from = subDays(new Date(), 7);
       const to = new Date();
-      const data = await getSessions({ from, to });
+      const data = await getSessions({
+        uid: isAdmin ? undefined : user?.uid,
+        from,
+        to,
+      });
       setSessions(data);
       setLoading(false);
     }
     load();
-  }, []);
+  }, [user?.uid, isAdmin]);
 
   // 1. Group hours by last 7 days
   const days = Array.from({ length: 7 }, (_, i) => {

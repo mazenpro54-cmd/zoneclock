@@ -4,7 +4,7 @@ import { getClients, createClient, updateClient, archiveClient } from "../servic
 import { getSessions, msToHoursDecimal } from "../services/sessions";
 import {
   Briefcase, Plus, Coins, Clock, Users, Building, Mail,
-  TrendingUp, CheckCircle, AlertCircle, Trash2
+  TrendingUp, CheckCircle, AlertCircle, Trash2, Shield
 } from "lucide-react";
 
 const PROJECTS_LIST = [
@@ -31,6 +31,7 @@ export default function ClientsPage() {
   const [saving, setSaving] = useState(false);
 
   async function loadData() {
+    if (!isAdmin) return;
     setLoading(true);
     try {
       const [clientsData, sessionsData] = await Promise.all([
@@ -47,8 +48,14 @@ export default function ClientsPage() {
   }
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (profile?.role) {
+      if (isAdmin) {
+        loadData();
+      } else {
+        setLoading(false);
+      }
+    }
+  }, [profile?.role, isAdmin]);
 
   async function handleCreateClient(e) {
     e.preventDefault();
@@ -104,6 +111,16 @@ export default function ClientsPage() {
     const hours = getClientHours(c.projects);
     return sum + hours * (Number(c.hourlyRate) || 0);
   }, 0);
+
+  if (profile && !isAdmin) {
+    return (
+      <div className="page centered" style={{ textAlign: "center", padding: "4rem 1rem" }}>
+        <Shield size={48} className="muted-icon" style={{ marginBottom: "1rem" }} />
+        <h2>Access Restricted</h2>
+        <p className="muted">Only administrators have access to client billing and customer financial data.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="page">

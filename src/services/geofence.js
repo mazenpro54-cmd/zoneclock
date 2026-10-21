@@ -90,6 +90,9 @@ export function triggerGeofenceAlert() {
       gain.connect(ctx.destination);
       osc.start();
       osc.stop(ctx.currentTime + 0.45);
+      setTimeout(() => {
+        try { ctx.close(); } catch {}
+      }, 500);
     }
   } catch {}
 }
@@ -126,6 +129,7 @@ export function startGeofenceWatcher({
   }
 
   let consecutiveExits = 0; // Requires 2 consecutive GPS readings outside zone to prevent false GPS jitter
+  let hasTriggeredBreach = false;
 
   function processPosition(coords) {
     const currentCoords = {
@@ -139,7 +143,8 @@ export function startGeofenceWatcher({
     if (!inside) {
       consecutiveExits++;
       // Confirm breach after 2 consecutive readings or large displacement (>1.5x radius)
-      if (consecutiveExits >= 2 || distanceM > zoneRadiusM * 1.5) {
+      if ((consecutiveExits >= 2 || distanceM > zoneRadiusM * 1.5) && !hasTriggeredBreach) {
+        hasTriggeredBreach = true;
         triggerGeofenceAlert();
         notifyPerimeterDeparture(distanceM, zoneRadiusM);
         if (onExit) {
@@ -152,6 +157,7 @@ export function startGeofenceWatcher({
       }
     } else {
       consecutiveExits = 0;
+      hasTriggeredBreach = false;
       if (onInside) {
         onInside({
           distanceM,

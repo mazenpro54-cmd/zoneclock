@@ -36,6 +36,10 @@ export function playAlertChime(type = "idle") {
       osc.start(now);
       osc.stop(now + 0.9);
     }
+
+    setTimeout(() => {
+      try { ctx.close(); } catch {}
+    }, 1000);
   } catch (e) {
     // AudioContext might be locked until user interaction
   }

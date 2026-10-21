@@ -10,7 +10,9 @@ const API_KEY_DEFAULT =
   import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
 const DEFAULTS = {
-  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  timezone: (typeof Intl !== "undefined" && Intl.DateTimeFormat)
+    ? (Intl.DateTimeFormat().resolvedOptions().timeZone || "Africa/Cairo")
+    : "Africa/Cairo",
   overtimeHours: 8,
   reminderHour: 9,
   zoneEnforcement: false,
@@ -44,7 +46,14 @@ export function SettingsProvider({ children }) {
         if (!parsed.googleMapsApiKey) {
           parsed.googleMapsApiKey = API_KEY_DEFAULT;
         }
-        return { ...DEFAULTS, ...parsed };
+        return {
+          ...DEFAULTS,
+          ...parsed,
+          webhookTriggers: {
+            ...DEFAULTS.webhookTriggers,
+            ...(parsed.webhookTriggers || {}),
+          },
+        };
       }
       return DEFAULTS;
     } catch {

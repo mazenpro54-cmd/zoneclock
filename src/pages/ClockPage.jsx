@@ -55,7 +55,9 @@ export default function ClockPage() {
   const [note, setNote] = useState("");
   const [journalNote, setJournalNote] = useState("");
   const [busy, setBusy] = useState(false);
-  const [notifPerm, setNotifPerm] = useState(Notification?.permission ?? "default");
+  const [notifPerm, setNotifPerm] = useState(
+    typeof Notification !== "undefined" ? Notification.permission : "default"
+  );
   const [zoneError, setZoneError] = useState(null);
   const cancelOvertimeRef = useRef(null);
 
@@ -104,7 +106,9 @@ export default function ClockPage() {
   useEffect(() => {
     if (session && notifPerm === "granted" && settings.overtimeHours) {
       if (cancelOvertimeRef.current) cancelOvertimeRef.current();
-      cancelOvertimeRef.current = scheduleOvertimeAlert(elapsed, settings.overtimeHours);
+      const startMs = session.startAt?.toDate ? session.startAt.toDate().getTime() : new Date(session.startAt).getTime();
+      const currentElapsed = Math.max(0, Date.now() - startMs);
+      cancelOvertimeRef.current = scheduleOvertimeAlert(currentElapsed, settings.overtimeHours);
     }
     return () => {
       if (cancelOvertimeRef.current) cancelOvertimeRef.current();
@@ -451,16 +455,4 @@ export default function ClockPage() {
       </div>
     </div>
   );
-}
-
-function haversineKm(lat1, lng1, lat2, lng2) {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }

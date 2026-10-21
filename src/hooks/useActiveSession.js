@@ -45,7 +45,9 @@ export function useActiveSession() {
   const [zoneStatus, setZoneStatus] = useState({ inside: true, distanceM: 0 });
 
   const sessionRef = useRef(session);
-  sessionRef.current = session;
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
 
   const employeeName =
     profile?.displayName || user?.displayName || user?.email || "Employee";
@@ -69,16 +71,17 @@ export function useActiveSession() {
       const cur = sessionRef.current;
       if (!cur) return;
       const checkInMs = cur.checkInTime?.toMillis?.() ?? Date.now();
-      const duration = Date.now() - checkInMs;
+      const totalBreakMs = cur.totalBreakMs || 0;
+      const netDuration = Math.max(0, Date.now() - checkInMs - totalBreakMs);
 
-      await fbCheckOut(cur.id, checkInMs, exitReason);
+      await fbCheckOut(cur.id, checkInMs, exitReason, totalBreakMs);
 
       // Send Webhook Alert
       sendWebhookNotification(settings, {
         event: "check_out",
         employeeName,
         project: cur.project,
-        duration: msToHMS(duration),
+        duration: msToHMS(netDuration),
         exitReason,
       });
 

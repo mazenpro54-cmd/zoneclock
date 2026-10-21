@@ -6,8 +6,8 @@ import { db } from "../firebase";
 import { TIMEZONES } from "../services/timezone";
 import { sendWebhookNotification } from "../services/webhooks";
 import {
-  User, Mail, Shield, LogOut, Globe, MapPin, Bell,
-  Clock, Download, CheckCircle, Navigation, MessageSquare, Send, Compass, Fingerprint, Sparkles, AlertTriangle, KeyRound
+  User, Mail, Shield, LogOut, Globe, Bell,
+  Clock, Download, CheckCircle, MessageSquare, Send, Fingerprint, Sparkles, KeyRound
 } from "lucide-react";
 import GoogleMapsZonePicker from "../components/GoogleMapsZonePicker";
 import {
@@ -24,7 +24,6 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState(profile?.displayName || "");
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [gpsLoading, setGpsLoading] = useState(false);
   const [installPrompt, setInstallPrompt] = useState(null);
   const [installed, setInstalled] = useState(false);
   const [webhookTested, setWebhookTested] = useState(false);
@@ -77,29 +76,6 @@ export default function ProfilePage() {
     } finally {
       setSaving(false);
     }
-  }
-
-  function handleCaptureOfficeLocation() {
-    if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser");
-      return;
-    }
-    setGpsLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        updateSettings({
-          zoneLat: pos.coords.latitude,
-          zoneLng: pos.coords.longitude,
-          zoneEnforcement: true,
-        });
-        setGpsLoading(false);
-      },
-      (err) => {
-        alert("GPS Error: " + err.message);
-        setGpsLoading(false);
-      },
-      { enableHighAccuracy: true }
-    );
   }
 
   async function handleRegisterBiometrics() {
@@ -336,6 +312,11 @@ export default function ProfilePage() {
                     One-Tap Biometric Clock-In
                   </h4>
                   <p className="muted-small">Authenticate via Face ID, Touch ID, or Windows Hello for instant check-in</p>
+                  {!biometricsSupported && (
+                    <p className="muted-small" style={{ color: "#f59e0b", margin: "4px 0 0" }}>
+                      Note: Hardware biometric sensor is not detected on this browser/environment.
+                    </p>
+                  )}
                 </div>
                 <input
                   type="checkbox"

@@ -23,6 +23,18 @@ export async function createShift({ uid, teamId, date, startTime, endTime, title
   });
 }
 
+export async function getAllShifts(from, to) {
+  const constraints = [
+    where("date", ">=", from),
+    where("date", "<=", to),
+    orderBy("date"),
+  ];
+  const snap = await getDocs(query(collection(db, SHIFTS), ...constraints));
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .filter((s) => !s.deleted);
+}
+
 export async function getShiftsForUser(uid, from, to) {
   const constraints = [
     where("uid", "==", uid),
@@ -32,7 +44,9 @@ export async function getShiftsForUser(uid, from, to) {
     orderBy("startTime"),
   ];
   const snap = await getDocs(query(collection(db, SHIFTS), ...constraints));
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .filter((s) => !s.deleted);
 }
 
 export async function getShiftsForTeam(teamId, from, to) {
@@ -43,7 +57,9 @@ export async function getShiftsForTeam(teamId, from, to) {
     orderBy("date"),
   ];
   const snap = await getDocs(query(collection(db, SHIFTS), ...constraints));
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .filter((s) => !s.deleted);
 }
 
 export async function deleteShift(shiftId) {

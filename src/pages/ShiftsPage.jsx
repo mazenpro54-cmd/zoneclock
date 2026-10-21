@@ -1,16 +1,14 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { useSettings } from "../contexts/SettingsContext";
-import { getShiftsForUser, getShiftsForTeam, createShift, deleteShift } from "../services/shifts";
+import { getAllShifts, getShiftsForUser, createShift, deleteShift } from "../services/shifts";
 import { getTeams } from "../services/teams";
 import { collection, getDocs, query, orderBy } from "../firebaseCompat";
 import { db } from "../firebase";
-import { Calendar, Clock, Plus, Trash2, User, Users, ShieldAlert, CheckCircle } from "lucide-react";
+import { Calendar, Clock, Plus, Trash2, User, Users } from "lucide-react";
 import { format, addDays, startOfWeek, endOfWeek } from "date-fns";
 
 export default function ShiftsPage() {
   const { user, profile } = useAuth();
-  const { settings } = useSettings();
   const isAdmin = profile?.role === "admin";
 
   const [shifts, setShifts] = useState([]);
@@ -43,12 +41,7 @@ export default function ShiftsPage() {
       setEmployees(usersList);
 
       if (isAdmin) {
-        // Load shifts for all employees
-        const allShifts = [];
-        for (const u of usersList) {
-          const userShifts = await getShiftsForUser(u.uid || u.id, weekStart, weekEnd);
-          allShifts.push(...userShifts);
-        }
+        const allShifts = await getAllShifts(weekStart, weekEnd);
         setShifts(allShifts);
       } else {
         const userShifts = await getShiftsForUser(user.uid, weekStart, weekEnd);

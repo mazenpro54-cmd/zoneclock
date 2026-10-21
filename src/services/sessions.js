@@ -59,9 +59,10 @@ export async function checkIn({ uid, displayName, project, note, location, taskI
   });
 }
 
-export async function checkOut(sessionId, checkInTimeMs, exitReason = "manual") {
+export async function checkOut(sessionId, checkInTimeMs, exitReason = "manual", totalBreakMs = 0) {
   const now = Date.now();
-  const durationMs = Math.max(0, now - (checkInTimeMs || now));
+  const rawDurationMs = Math.max(0, now - (checkInTimeMs || now));
+  const netDurationMs = Math.max(0, rawDurationMs - (totalBreakMs || 0));
   const ts = {
     _ms: now,
     seconds: now / 1000,
@@ -70,7 +71,9 @@ export async function checkOut(sessionId, checkInTimeMs, exitReason = "manual") 
   };
   await updateDoc(doc(db, SESSIONS, sessionId), {
     checkOutTime: ts,
-    durationMs,
+    durationMs: netDurationMs,
+    grossDurationMs: rawDurationMs,
+    totalBreakMs: totalBreakMs || 0,
     status: "done",
     exitReason,
   });

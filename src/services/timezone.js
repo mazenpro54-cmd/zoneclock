@@ -7,6 +7,7 @@ export const TIMEZONES = Intl.supportedValuesOf
   ? Intl.supportedValuesOf("timeZone")
   : [
       "UTC",
+      "Africa/Cairo",
       "America/New_York",
       "America/Chicago",
       "America/Denver",

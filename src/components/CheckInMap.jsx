@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Navigation, Layers, Crosshair, Map, Globe, Mountain } from "lucide-react";
+import { Navigation, Crosshair, Map, Globe, Mountain } from "lucide-react";
 
 // Real tile layers without watermarks or API key requirements
 const TILE_PROVIDERS = {

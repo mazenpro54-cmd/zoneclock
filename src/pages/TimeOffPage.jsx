@@ -40,6 +40,10 @@ export default function TimeOffPage() {
 
   async function handleCreateRequest(e) {
     e.preventDefault();
+    if (new Date(endDate) < new Date(startDate)) {
+      alert("End date cannot be earlier than start date.");
+      return;
+    }
     setSubmitting(true);
     try {
       const start = new Date(startDate);

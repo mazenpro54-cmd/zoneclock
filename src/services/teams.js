@@ -4,7 +4,7 @@
  */
 import {
   collection, doc, addDoc, updateDoc, getDocs,
-  query, where, orderBy, serverTimestamp, getDoc, arrayUnion, arrayRemove,
+  query, where, orderBy, serverTimestamp, arrayUnion, arrayRemove,
 } from "../firebaseCompat";
 import { db } from "../firebase";
 
@@ -22,13 +22,17 @@ export async function createTeam({ name, description, adminUid }) {
 
 export async function getTeams() {
   const snap = await getDocs(query(collection(db, TEAMS), orderBy("name")));
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .filter((t) => !t.archived);
 }
 
 export async function getUserTeams(uid) {
   const q = query(collection(db, TEAMS), where("memberUids", "array-contains", uid));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .filter((t) => !t.archived);
 }
 
 export async function addMemberToTeam(teamId, uid) {
