@@ -7,7 +7,6 @@ import {
   query,
   where,
   orderBy,
-  serverTimestamp,
   Timestamp,
   limit,
 } from "../firebaseCompat";
@@ -138,4 +137,17 @@ export function msToHMS(ms) {
 export function msToHoursDecimal(ms) {
   if (!ms) return 0;
   return Math.round((ms / 3600000) * 100) / 100;
+}
+
+/**
+ * Returns net work duration in milliseconds.
+ * If grossDurationMs exists, durationMs already reflects net duration (breaks deducted).
+ * For legacy sessions lacking grossDurationMs, subtracts totalBreakMs from durationMs.
+ */
+export function getNetDurationMs(session) {
+  if (!session) return 0;
+  if (session.grossDurationMs != null) {
+    return Math.max(0, session.durationMs ?? 0);
+  }
+  return Math.max(0, (session.durationMs ?? 0) - (session.totalBreakMs ?? 0));
 }

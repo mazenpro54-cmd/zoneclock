@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { getClients, createClient, updateClient, archiveClient } from "../services/clients";
-import { getSessions, msToHoursDecimal } from "../services/sessions";
+import { getSessions, msToHoursDecimal, getNetDurationMs } from "../services/sessions";
 import {
   Briefcase, Plus, Coins, Clock, Users, Building, Mail,
   TrendingUp, CheckCircle, AlertCircle, Trash2, Shield
@@ -99,7 +99,7 @@ export default function ClientsPage() {
   const getClientHours = (clientProjects = []) => {
     const matched = sessions.filter((s) => clientProjects.includes(s.project));
     const totalMs = matched.reduce(
-      (sum, s) => sum + Math.max(0, (s.durationMs ?? 0) - (s.totalBreakMs ?? 0)),
+      (sum, s) => sum + getNetDurationMs(s),
       0
     );
     return msToHoursDecimal(totalMs);

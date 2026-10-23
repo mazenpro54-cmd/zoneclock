@@ -1,7 +1,7 @@
 /**
  * Payroll & Payout Calculation Service — Egyptian Pounds (EGP)
  */
-import { msToHoursDecimal } from "./sessions";
+import { msToHoursDecimal, getNetDurationMs } from "./sessions";
 
 export function calculateEmployeePayroll(employee, sessions = []) {
   const rate = Number(employee.hourlyPayRate) || 350; // Default 350 EGP/hr if not set
@@ -16,7 +16,7 @@ export function calculateEmployeePayroll(employee, sessions = []) {
     const d = s.checkInTime?.toDate?.()
       ? s.checkInTime.toDate().toISOString().slice(0, 10)
       : "2026-10-01";
-    const net = Math.max(0, (s.durationMs ?? 0) - (s.totalBreakMs ?? 0));
+    const net = getNetDurationMs(s);
     sessionsByDay[d] = (sessionsByDay[d] || 0) + net;
   });
 

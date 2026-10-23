@@ -23,6 +23,10 @@ export default function TimeOffPage() {
   const [submitting, setSubmitting] = useState(false);
 
   async function loadData() {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const data = await getTimeOffRequests(isAdmin ? {} : { uid: user.uid });
@@ -36,12 +40,16 @@ export default function TimeOffPage() {
 
   useEffect(() => {
     loadData();
-  }, [user, isAdmin]);
+  }, [user?.uid, isAdmin]);
 
   async function handleCreateRequest(e) {
     e.preventDefault();
     if (new Date(endDate) < new Date(startDate)) {
       alert("End date cannot be earlier than start date.");
+      return;
+    }
+    if (!user?.uid) {
+      alert("You must be logged in to request time off.");
       return;
     }
     setSubmitting(true);

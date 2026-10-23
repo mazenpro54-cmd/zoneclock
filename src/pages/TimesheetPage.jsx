@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getSessions, msToHMS, msToHoursDecimal } from "../services/sessions";
+import { getSessions, msToHMS, msToHoursDecimal, getNetDurationMs } from "../services/sessions";
 import { exportCSV, exportPDF } from "../services/export";
 import { useAuth } from "../contexts/AuthContext";
 import { useSettings } from "../contexts/SettingsContext";
@@ -25,12 +25,13 @@ export default function TimesheetPage() {
   const [selectedProject, setSelectedProject] = useState("ALL");
 
   useEffect(() => {
+    if (!user) return;
     setLoading(true);
     const { from, to } = RANGES[range].fn();
     getSessions({ uid: isAdmin ? undefined : user.uid, from, to })
       .then(setSessions)
       .finally(() => setLoading(false));
-  }, [range, user.uid, isAdmin]);
+  }, [range, user?.uid, isAdmin]);
 
   // Unique projects from current session data
   const projects = ["ALL", ...new Set(sessions.map((s) => s.project || "General"))];
@@ -39,10 +40,7 @@ export default function TimesheetPage() {
     ? sessions
     : sessions.filter((s) => (s.project || "General") === selectedProject);
 
-  const totalMs = filteredSessions.reduce((sum, s) => {
-    const net = (s.durationMs ?? 0) - (s.totalBreakMs ?? 0);
-    return sum + Math.max(0, net);
-  }, 0);
+  const totalMs = filteredSessions.reduce((sum, s) => sum + getNetDurationMs(s), 0);
 
   return (
     <div className="page">
@@ -131,7 +129,7 @@ export default function TimesheetPage() {
               {filteredSessions.map((s) => {
                 const inDate = s.checkInTime;
                 const outDate = s.checkOutTime;
-                const net = msToHoursDecimal((s.durationMs ?? 0) - (s.totalBreakMs ?? 0));
+                const net = msToHoursDecimal(getNetDurationMs(s));
                 return (
                   <tr key={s.id}>
                     {isAdmin && <td>{s.displayName}</td>}

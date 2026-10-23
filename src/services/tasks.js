@@ -3,8 +3,8 @@
  * Collection: tasks/{id}
  */
 import {
-  collection, doc, addDoc, updateDoc, getDocs,
-  query, where, orderBy, serverTimestamp,
+  collection, doc, addDoc, updateDoc, getDocs, getDoc,
+  query, where, serverTimestamp,
 } from "../firebaseCompat";
 import { db } from "../firebase";
 
@@ -16,7 +16,9 @@ export async function getTasks({ project, assignedUid } = {}) {
   if (assignedUid) constraints.push(where("assignedUid", "==", assignedUid));
   const q = query(collection(db, TASKS), ...constraints);
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .filter((t) => !t.deleted);
 }
 
 export async function createTask({ title, description, project, priority = "medium", assignedUid, assignedName, estimatedHours = 0 }) {
@@ -39,12 +41,10 @@ export async function updateTaskStatus(taskId, status) {
 }
 
 export async function updateTaskTrackedTime(taskId, deltaHours) {
-  // In a real app we could use increment(), here we update directly
   const ref = doc(db, TASKS, taskId);
-  const snap = await getDocs(query(collection(db, TASKS)));
-  const target = snap.docs.find((d) => d.id === taskId);
-  if (target) {
-    const current = target.data().trackedHours || 0;
+  const snap = await getDoc(ref);
+  if (snap.exists()) {
+    const current = snap.data().trackedHours || 0;
     await updateDoc(ref, { trackedHours: Math.round((current + deltaHours) * 100) / 100 });
   }
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { collection, getDocs, query, orderBy, doc, updateDoc } from "../firebaseCompat";
 import { db } from "../firebase";
-import { getSessions, msToHoursDecimal } from "../services/sessions";
+import { getSessions, msToHoursDecimal, getNetDurationMs } from "../services/sessions";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { Users, Clock, TrendingUp, Shield, MapPin, Briefcase, BarChart2, KeyRound, Check, RefreshCw, X, AlertCircle } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
@@ -55,7 +55,7 @@ export default function AdminPage() {
 
   // Aggregate hours per user this week
   const hoursMap = weekSessions.reduce((acc, s) => {
-    const net = Math.max(0, (s.durationMs ?? 0) - (s.totalBreakMs ?? 0));
+    const net = getNetDurationMs(s);
     acc[s.uid] = (acc[s.uid] || 0) + net;
     return acc;
   }, {});

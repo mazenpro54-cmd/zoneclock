@@ -190,7 +190,7 @@ export function useActiveSession() {
     });
 
     return () => unwatch();
-  }, [session?.status, settings.zoneEnforcement, settings.zoneLat, settings.zoneLng, settings.zoneRadiusM, settings.autoCheckoutOnExit, checkOut]);
+  }, [session?.status, settings, employeeName, checkOut]);
 
   // ── Live elapsed counter ─────────────────────────────────────────────
   useEffect(() => {
@@ -247,8 +247,13 @@ export function useActiveSession() {
   // ── Start Break ─────────────────────────────────────────────────────
   const startBreak = useCallback(async () => {
     if (!session) return;
-    await fbStartBreak(session.id, session.breaks ?? []);
-    setSession((s) => ({ ...s, status: "break" }));
+    const now = Date.now();
+    const breakEntry = { start: now, end: null };
+    const currentBreaks = session.breaks ?? [];
+    await fbStartBreak(session.id, currentBreaks);
+    setSession((s) =>
+      s ? { ...s, status: "break", breaks: [...(s.breaks ?? []), breakEntry] } : null
+    );
 
     sendWebhookNotification(settings, {
       event: "break_start",
@@ -261,15 +266,19 @@ export function useActiveSession() {
   const endBreak = useCallback(async () => {
     if (!session) return;
     await fbEndBreak(session.id, session.breaks ?? []);
-    const fresh = await getActiveSession(user.uid);
-    setSession(reviveSession(fresh));
+    if (user?.uid) {
+      const fresh = await getActiveSession(user.uid);
+      if (fresh) {
+        setSession(reviveSession(fresh));
+      }
+    }
 
     sendWebhookNotification(settings, {
       event: "break_end",
       employeeName,
       project: session?.project,
     });
-  }, [session, user, employeeName, settings]);
+  }, [session, user?.uid, employeeName, settings]);
 
   const clearAutoCheckoutNotice = useCallback(() => {
     setAutoCheckoutNotice(null);

@@ -3,7 +3,7 @@
  * Includes UTF-8 BOM encoding for seamless Microsoft Excel compatibility on Windows & Mac.
  */
 
-import { msToHoursDecimal, msToHMS } from "./sessions";
+import { msToHoursDecimal, msToHMS, getNetDurationMs } from "./sessions";
 import { format } from "date-fns";
 
 export function escapeHtml(str) {
@@ -52,7 +52,7 @@ export function exportCSV(sessions, filename = `zoneclock-timesheets-${format(ne
     ...sessions.map((s) => {
       const inDate = s.checkInTime?.toDate?.() ?? (s.checkInTime ? new Date(s.checkInTime) : new Date());
       const outDate = s.checkOutTime?.toDate?.() ?? (s.checkOutTime ? new Date(s.checkOutTime) : null);
-      const netHours = outDate ? msToHoursDecimal((s.durationMs ?? 0) - (s.totalBreakMs ?? 0)) : "Active";
+      const netHours = outDate ? msToHoursDecimal(getNetDurationMs(s)) : "Active";
       return [
         s.id || "—",
         s.displayName || "Unknown",
@@ -80,14 +80,14 @@ export function exportCSV(sessions, filename = `zoneclock-timesheets-${format(ne
 // ─── Timesheet PDF Export (Printable Executive Report) ──────────────────────
 export function exportPDF(sessions, title = "ZoneClock Timesheet Report") {
   const totalNetMs = sessions.reduce((sum, s) => {
-    return sum + Math.max(0, (s.durationMs ?? 0) - (s.totalBreakMs ?? 0));
+    return sum + getNetDurationMs(s);
   }, 0);
   const totalHours = msToHoursDecimal(totalNetMs);
 
   const tableRows = sessions.map((s, index) => {
     const inDate = s.checkInTime?.toDate?.() ?? (s.checkInTime ? new Date(s.checkInTime) : new Date());
     const outDate = s.checkOutTime?.toDate?.() ?? (s.checkOutTime ? new Date(s.checkOutTime) : null);
-    const netH = outDate ? msToHoursDecimal((s.durationMs ?? 0) - (s.totalBreakMs ?? 0)) + "h" : "Active";
+    const netH = outDate ? msToHoursDecimal(getNetDurationMs(s)) + "h" : "Active";
 
     return `
       <tr>

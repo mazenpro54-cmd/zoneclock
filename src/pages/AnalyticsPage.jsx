@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { getSessions, msToHoursDecimal, msToHMS } from "../services/sessions";
+import { getSessions, msToHoursDecimal, msToHMS, getNetDurationMs } from "../services/sessions";
 import { format, subDays, startOfWeek, endOfWeek, isSameDay } from "date-fns";
 import {
   BarChart2, PieChart, TrendingUp, Clock, Calendar,
@@ -39,7 +39,7 @@ export default function AnalyticsPage() {
       return isSameDay(sDate, d);
     });
     const totalMs = daySessions.reduce(
-      (sum, s) => sum + Math.max(0, (s.durationMs ?? 0) - (s.totalBreakMs ?? 0)),
+      (sum, s) => sum + getNetDurationMs(s),
       0
     );
     return {
@@ -56,7 +56,7 @@ export default function AnalyticsPage() {
   // 2. Project breakdown
   const projectMap = sessions.reduce((acc, s) => {
     const p = s.project || "General";
-    const netMs = Math.max(0, (s.durationMs ?? 0) - (s.totalBreakMs ?? 0));
+    const netMs = getNetDurationMs(s);
     acc[p] = (acc[p] || 0) + netMs;
     return acc;
   }, {});

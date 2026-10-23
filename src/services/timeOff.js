@@ -15,7 +15,9 @@ export async function getTimeOffRequests({ uid } = {}) {
   if (uid) constraints.push(where("uid", "==", uid));
   const q = query(collection(db, TIMEOFF), ...constraints);
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => new Date(b.startDate || b.createdAt || 0) - new Date(a.startDate || a.createdAt || 0));
 }
 
 export async function requestTimeOff({ uid, displayName, type, startDate, endDate, daysCount, reason }) {

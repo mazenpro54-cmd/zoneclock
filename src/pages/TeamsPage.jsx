@@ -3,7 +3,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { getTeams, createTeam, addMemberToTeam, removeMemberFromTeam } from "../services/teams";
 import { collection, getDocs, query, orderBy } from "../firebaseCompat";
 import { db } from "../firebase";
-import { Users, Plus, UserPlus, UserMinus, Shield, Briefcase, Mail } from "lucide-react";
+import { Users, Plus, UserPlus, UserMinus, Briefcase } from "lucide-react";
 
 export default function TeamsPage() {
   const { user, profile } = useAuth();
@@ -25,12 +25,18 @@ export default function TeamsPage() {
   async function loadData() {
     setLoading(true);
     try {
-      const [teamsData, usersSnap] = await Promise.all([
-        getTeams(),
-        getDocs(query(collection(db, "users"), orderBy("displayName"))),
-      ]);
+      const teamsData = await getTeams();
       setTeams(teamsData);
-      setEmployees(usersSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+
+      // Only attempt to load the entire user directory if user is admin
+      if (isAdmin) {
+        try {
+          const usersSnap = await getDocs(query(collection(db, "users"), orderBy("displayName")));
+          setEmployees(usersSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        } catch (uErr) {
+          console.warn("Could not load users list:", uErr);
+        }
+      }
     } catch (err) {
       console.error("Error loading teams:", err);
     } finally {
@@ -40,7 +46,7 @@ export default function TeamsPage() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [isAdmin]);
 
   async function handleCreateTeam(e) {
     e.preventDefault();
@@ -50,7 +56,7 @@ export default function TeamsPage() {
       await createTeam({
         name: teamName.trim(),
         description: teamDesc.trim(),
-        adminUid: user.uid,
+        adminUid: user?.uid || "",
       });
       setTeamName("");
       setTeamDesc("");
