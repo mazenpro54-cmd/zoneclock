@@ -82,7 +82,8 @@ export default function App() {
       window.location.protocol === "capacitor:" ||
       window.location.protocol === "file:" ||
       (window.location.hostname === "localhost" && window.location.port === "") ||
-      window.location.pathname.endsWith(".html"));
+      window.location.pathname.endsWith(".html") ||
+      window.location.hostname.endsWith("github.io"));
 
   const RouterComponent = isNative ? HashRouter : BrowserRouter;
 
