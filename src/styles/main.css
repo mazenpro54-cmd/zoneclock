@@ -49,13 +49,12 @@ body {
 
 /* ─── App Shell ──────────────────────────────────────────── */
 .app-shell {
-  display: grid;
-  grid-template-rows: var(--header-h) 1fr var(--nav-h);
+  display: flex;
+  flex-direction: column;
   min-height: 100dvh;
   max-width: 640px;
   width: 100%;
   margin: 0 auto;
-  overflow-x: hidden;
   position: relative;
 }
 
@@ -65,11 +64,14 @@ body {
   z-index: 50;
   background: rgba(15,15,19,0.85);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   padding: 0 1.25rem;
   width: 100%;
+  height: var(--header-h);
+  flex-shrink: 0;
 }
 .header-brand {
   display: flex;
@@ -82,30 +84,34 @@ body {
 .brand-icon { color: var(--brand); }
 
 .app-main {
-  overflow-y: auto;
-  overflow-x: hidden;
+  flex: 1 1 auto;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  padding-bottom: 1rem;
+  padding-bottom: calc(var(--nav-h) + 1.75rem + env(safe-area-inset-bottom, 0px));
 }
 
 /* ─── Bottom Nav ─────────────────────────────────────────── */
 .bottom-nav {
-  position: sticky;
+  position: fixed;
   bottom: 0;
-  z-index: 50;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 80;
   display: flex;
-  background: rgba(26,26,36,0.95);
+  background: rgba(26,26,36,0.96);
   backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-top: 1px solid var(--border);
-  height: var(--nav-h);
+  height: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   width: 100%;
-  max-width: 100%;
+  max-width: 640px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.45);
 }
 .bottom-nav::-webkit-scrollbar { display: none; }
 .nav-item {
@@ -633,6 +639,7 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
 /* ─── Responsive — wide screens ─────────────────────────── */
 @media (min-width: 640px) {
   .app-shell { border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+  .bottom-nav { border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
   .action-group { flex-direction: row; flex-wrap: wrap; }
   .action-group .field { flex: 1 1 220px; }
   .action-group .btn-checkin { min-width: 160px; }
@@ -820,7 +827,7 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
   inset: 0;
   background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(8px);
-  z-index: 100;
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
