@@ -13,7 +13,7 @@ const CLIENTS = "clients";
 export async function getClients() {
   const q = query(collection(db, CLIENTS), orderBy("name"));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((c) => !c.archived);
 }
 
 export async function createClient({ name, company, email, hourlyRate, budgetHours, currency = "EGP", projects = [] }) {

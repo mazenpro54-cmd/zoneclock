@@ -37,3 +37,5 @@ ios/App/Pods
 ios/App/DerivedData
 ios/App/build
 
+
+.vercel

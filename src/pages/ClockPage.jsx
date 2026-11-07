@@ -106,7 +106,10 @@ export default function ClockPage() {
   useEffect(() => {
     if (session && notifPerm === "granted" && settings.overtimeHours) {
       if (cancelOvertimeRef.current) cancelOvertimeRef.current();
-      const startMs = session.startAt?.toDate ? session.startAt.toDate().getTime() : new Date(session.startAt).getTime();
+      const rawTime = session.checkInTime || session.startAt;
+      const startMs = rawTime?.toDate
+        ? rawTime.toDate().getTime()
+        : (rawTime ? new Date(rawTime).getTime() : Date.now());
       const currentElapsed = Math.max(0, Date.now() - startMs);
       cancelOvertimeRef.current = scheduleOvertimeAlert(currentElapsed, settings.overtimeHours);
     }
@@ -169,8 +172,12 @@ export default function ClockPage() {
 
   async function handleCheckOut() {
     setBusy(true);
-    try { await checkOut(); }
-    finally { setBusy(false); }
+    try {
+      await checkOut("manual", journalNote);
+      setJournalNote("");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function handleBreak() {

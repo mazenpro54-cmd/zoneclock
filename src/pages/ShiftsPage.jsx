@@ -60,7 +60,14 @@ export default function ShiftsPage() {
 
   async function handleCreateShift(e) {
     e.preventDefault();
-    if (!targetUid) return;
+    if (!targetUid) {
+      alert("Please select an employee.");
+      return;
+    }
+    if (startTime >= endTime) {
+      alert("Shift end time must be later than start time.");
+      return;
+    }
     setSaving(true);
     try {
       await createShift({

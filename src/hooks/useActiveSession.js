@@ -67,14 +67,33 @@ export function useActiveSession() {
 
   // ── Check Out helper ────────────────────────────────────────────────
   const checkOut = useCallback(
-    async (exitReason = "manual") => {
+    async (exitReason = "manual", checkoutNote = null) => {
       const cur = sessionRef.current;
       if (!cur) return;
       const checkInMs = cur.checkInTime?.toMillis?.() ?? Date.now();
-      const totalBreakMs = cur.totalBreakMs || 0;
+
+      // Close any active break if currently on break
+      let finalBreaks = cur.breaks ? [...cur.breaks] : [];
+      let totalBreakMs = cur.totalBreakMs || 0;
+      if (finalBreaks.length > 0) {
+        const lastIdx = finalBreaks.length - 1;
+        if (!finalBreaks[lastIdx].end) {
+          const now = Date.now();
+          const breakDuration = Math.max(0, now - finalBreaks[lastIdx].start);
+          finalBreaks[lastIdx] = { ...finalBreaks[lastIdx], end: now };
+          totalBreakMs += breakDuration;
+        }
+      }
+
       const netDuration = Math.max(0, Date.now() - checkInMs - totalBreakMs);
 
-      await fbCheckOut(cur.id, checkInMs, exitReason, totalBreakMs);
+      // Combine notes if checkoutNote is provided
+      let finalNote = cur.note || null;
+      if (checkoutNote && checkoutNote.trim()) {
+        finalNote = cur.note ? `${cur.note} | ${checkoutNote.trim()}` : checkoutNote.trim();
+      }
+
+      await fbCheckOut(cur.id, checkInMs, exitReason, totalBreakMs, finalBreaks, finalNote);
 
       // Send Webhook Alert
       sendWebhookNotification(settings, {
@@ -83,6 +102,7 @@ export function useActiveSession() {
         project: cur.project,
         duration: msToHMS(netDuration),
         exitReason,
+        note: finalNote,
       });
 
       setSession(null);
@@ -125,7 +145,10 @@ export function useActiveSession() {
     }
 
     getActiveSession(user.uid).then(async (dbSession) => {
-      const resolved = dbSession ? reviveSession(dbSession) : loadCachedSession();
+      const resolved = dbSession ? reviveSession(dbSession) : null;
+      if (!resolved) {
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
+      }
       setSession(resolved);
       sessionRef.current = resolved;
       setLoading(false);

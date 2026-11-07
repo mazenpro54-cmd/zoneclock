@@ -28,6 +28,12 @@ export default function PayrollPage() {
   const [paidStatus, setPaidStatus] = useState({});
 
   useEffect(() => {
+    if (!profile) return;
+    if (!isAdmin) {
+      setLoading(false);
+      return;
+    }
+
     async function load() {
       setLoading(true);
       try {
@@ -46,7 +52,7 @@ export default function PayrollPage() {
       }
     }
     load();
-  }, [rangeIndex]);
+  }, [profile, isAdmin, rangeIndex]);
 
   if (!isAdmin) {
     return (

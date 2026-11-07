@@ -38,6 +38,12 @@ export default function ProfilePage() {
   const [pwdError, setPwdError] = useState("");
 
   useEffect(() => {
+    if (profile?.displayName) {
+      setDisplayName(profile.displayName);
+    }
+  }, [profile?.displayName]);
+
+  useEffect(() => {
     isBiometricsAvailable().then(setBiometricsSupported);
   }, []);
 

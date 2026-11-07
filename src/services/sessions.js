@@ -58,7 +58,7 @@ export async function checkIn({ uid, displayName, project, note, location, taskI
   });
 }
 
-export async function checkOut(sessionId, checkInTimeMs, exitReason = "manual", totalBreakMs = 0) {
+export async function checkOut(sessionId, checkInTimeMs, exitReason = "manual", totalBreakMs = 0, finalBreaks = null, additionalNote = null) {
   const now = Date.now();
   const rawDurationMs = Math.max(0, now - (checkInTimeMs || now));
   const netDurationMs = Math.max(0, rawDurationMs - (totalBreakMs || 0));
@@ -68,14 +68,21 @@ export async function checkOut(sessionId, checkInTimeMs, exitReason = "manual", 
     toMillis: () => now,
     toDate: () => new Date(now),
   };
-  await updateDoc(doc(db, SESSIONS, sessionId), {
+  const updateData = {
     checkOutTime: ts,
     durationMs: netDurationMs,
     grossDurationMs: rawDurationMs,
     totalBreakMs: totalBreakMs || 0,
     status: "done",
     exitReason,
-  });
+  };
+  if (Array.isArray(finalBreaks)) {
+    updateData.breaks = finalBreaks;
+  }
+  if (additionalNote) {
+    updateData.note = additionalNote;
+  }
+  await updateDoc(doc(db, SESSIONS, sessionId), updateData);
 }
 
 export async function startBreak(sessionId, currentBreaks) {
