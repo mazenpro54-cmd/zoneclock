@@ -10,4 +10,13 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
         WebView.setWebContentsDebuggingEnabled(true);
     }
+
+    @Override
+    public void onBackPressed() {
+        if (getBridge() != null && getBridge().getWebView() != null && getBridge().getWebView().canGoBack()) {
+            getBridge().getWebView().goBack();
+        } else {
+            super.onBackPressed();
+        }
+    }
 }

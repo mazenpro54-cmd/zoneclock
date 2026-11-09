@@ -4,7 +4,7 @@
  */
 import {
   collection, doc, addDoc, updateDoc, getDocs, query,
-  where, orderBy, serverTimestamp, Timestamp,
+  where, orderBy, serverTimestamp,
 } from "../firebaseCompat";
 import { db } from "../firebase";
 

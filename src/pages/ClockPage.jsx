@@ -15,7 +15,7 @@ import {
   Bell, BellOff, AlertTriangle, CheckCircle2, Target,
   Play, Pause, RotateCcw, AlertCircle, ShieldCheck, Fingerprint, Sparkles
 } from "lucide-react";
-import { verifyBiometricClockIn, isBiometricsAvailable } from "../services/biometrics";
+import { verifyBiometricClockIn, isBiometricsAvailable, isBiometricEnrolled } from "../services/biometrics";
 
 const PROJECTS = [
   "General", "Development", "Design", "Marketing",
@@ -147,11 +147,22 @@ export default function ClockPage() {
     if (!inZone) return;
 
     if (requireBiometric || settings.biometricClockIn) {
-      try {
-        await verifyBiometricClockIn(profile?.email || "employee@zoneclock.app");
-      } catch (err) {
-        alert(err.message || "Biometric scan cancelled");
-        return;
+      if (!isBiometricEnrolled()) {
+        if (requireBiometric) {
+          alert("No biometric credential is enrolled on this device. Please register your fingerprint / biometrics in your Profile tab first.");
+          return;
+        }
+        const proceed = confirm(
+          "Biometric check-in is enabled in settings, but no biometrics are enrolled on this device. Would you like to proceed with standard check-in?"
+        );
+        if (!proceed) return;
+      } else {
+        try {
+          await verifyBiometricClockIn(profile?.email || "employee@zoneclock.app");
+        } catch (err) {
+          alert(err.message || "Biometric scan cancelled");
+          return;
+        }
       }
     }
 
